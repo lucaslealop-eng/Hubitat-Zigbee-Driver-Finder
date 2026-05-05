@@ -1,6 +1,6 @@
 /**
  * ========================================================
- *  Hubitat Zigbee Driver Finder
+ *  Hubitat Zigbee Driver Finder v3.0.0
  * ========================================================
  *  SmartApp para Hubitat Elevation
  *
@@ -9,12 +9,16 @@
  *  e clusters reportados.
  *
  *  Autor: Lucas (Hubitat Agent Project)
- *  Versão: 1.0.0
+ *  Versão: 3.0.0
  *  Data: 2026-05-05
  *
- *  O banco de dados de dispositivos é carregado de um
- *  arquivo JSON remoto para permitir atualizações sem
- *  alterar o código do App.
+ *  Funcionalidades:
+ *   - Pesquisa individual de dispositivo
+ *   - Scan completo de todos os Zigbee do hub
+ *   - Cache local do banco de dados (24h TTL)
+ *   - Comparação driver atual vs. recomendado
+ *   - Ranking de confiança (⭐⭐⭐ / ⭐⭐ / ⭐)
+ *   - Página de estatísticas
  * ========================================================
  */
 
@@ -33,17 +37,23 @@ definition(
     singleInstance: true
 )
 
-// ─── Preferências Globais ──────────────────────────────
 preferences {
     page(name: "mainPage")
-    page(name: "resultPage")
+    page(name: "scanSinglePage")
+    page(name: "scanAllPage")
+    page(name: "statsPage")
 }
 
 // ─── Constantes ────────────────────────────────────────
 @Field static String DB_BASE_URL = "https://raw.githubusercontent.com/lucaslealop-eng/Hubitat-Zigbee-Driver-Finder/main/data/"
 @Field static List DB_FILES = ["db_tuya.json", "db_xiaomi_aqara.json", "db_brands.json", "db_other_brands.json", "db_misc_zigbee.json", "db_hpm_scraped.json"]
 @Field static String DB_INDEX_URL = "https://raw.githubusercontent.com/lucaslealop-eng/Hubitat-Zigbee-Driver-Finder/main/data/zigbee_driver_db.json"
-@Field static String APP_VERSION = "2.0.0"
+@Field static String APP_VERSION = "3.0.0"
+
+// ─── Cache Estático (JVM memory, não state) ────────────
+@Field static Map cachedDb = null
+@Field static Long cacheTs = 0
+@Field static Long CACHE_TTL = 86400000
 
 // ═══════════════════════════════════════════════════════
 //  PÁGINAS DA INTERFACE
@@ -52,135 +62,136 @@ preferences {
 def mainPage() {
     dynamicPage(name: "mainPage", title: "", install: true, uninstall: true) {
         section("<h2>🔍 Zigbee Driver Finder v${APP_VERSION}</h2>") {
-            paragraph "<i>Selecione um dispositivo Zigbee para descobrir qual driver utilizar.</i>"
+            paragraph "<i>Encontre o driver ideal para qualquer dispositivo Zigbee do seu hub.</i>"
         }
-        section("Selecione o Dispositivo") {
-            input name: "selectedDevice", type: "capability.*", title: "Dispositivo Zigbee", required: true, submitOnChange: true
+        section("Menu Principal") {
+            href "scanSinglePage", title: "🔎 Pesquisar Dispositivo Individual", description: "Selecione um dispositivo e veja a recomendação detalhada"
+            href "scanAllPage", title: "📊 Escanear Todos os Dispositivos", description: "Analise todos os Zigbee de uma vez e veja um relatório completo"
+            href "statsPage", title: "📈 Estatísticas", description: "Resumo do hub e status do banco de dados"
         }
+        def cacheStatus = getCacheStatusText()
+        section("<h3>💾 Cache</h3>") {
+            paragraph cacheStatus
+        }
+    }
+}
 
+def scanSinglePage() {
+    dynamicPage(name: "scanSinglePage", title: "", install: false) {
+        section("<h2>🔎 Pesquisa Individual</h2>") {
+            input name: "selectedDevice", type: "capability.*", title: "Dispositivo Zigbee", required: false, submitOnChange: true
+        }
         if (selectedDevice) {
-            // Extrai os dados Zigbee do dispositivo selecionado
+            def db = getCachedDatabase()
             def devData = getDeviceZigbeeData(selectedDevice)
-            
             section("<h3>📋 Informações do Dispositivo</h3>") {
                 paragraph formatDeviceInfo(devData)
             }
-
-            // Tenta buscar o banco de dados e fazer o match
-            section("<h3>🎯 Recomendação de Driver</h3>") {
-                paragraph "<i>Buscando no banco de dados...</i>"
-                // Disparamos a busca assíncrona ao carregar a página
-                fetchDriverDatabase(devData)
-            }
-
-            // Exibe o resultado se já tivermos processado
-            if (state.lastRecommendation) {
-                section("") {
-                    paragraph state.lastRecommendation
+            if (db) {
+                def result = findBestMatch(db, devData)
+                section("<h3>🎯 Recomendação de Driver</h3>") {
+                    paragraph formatMatchResult(result, devData)
                 }
+            } else {
+                section("") { paragraph formatError("Não foi possível carregar o banco de dados remoto.") }
             }
         }
     }
 }
 
-// ═══════════════════════════════════════════════════════
-//  EXTRAÇÃO DE DADOS DO DISPOSITIVO
-// ═══════════════════════════════════════════════════════
-
-/**
- * Extrai as informações Zigbee relevantes de um dispositivo.
- * Usa device.getDataValue() — a API correta do Hubitat para
- * ler campos individuais do fingerprint Zigbee.
- */
-def getDeviceZigbeeData(dev) {
-    def data = [:]
-    
-    try {
-        data.manufacturer = dev.getDataValue("manufacturer") ?: "Desconhecido"
-        data.model = dev.getDataValue("model") ?: "Desconhecido"
-        data.inClusters = dev.getDataValue("inClusters") ?: ""
-        data.outClusters = dev.getDataValue("outClusters") ?: ""
-        data.profileId = dev.getDataValue("profileId") ?: ""
-        data.endpointId = dev.getDataValue("endpointId") ?: "01"
-    } catch (e) {
-        log.error "Erro ao ler dados do dispositivo: ${e.message}"
-        data.manufacturer = "Erro"
-        data.model = "Erro"
-        data.inClusters = ""
-        data.outClusters = ""
+def scanAllPage() {
+    dynamicPage(name: "scanAllPage", title: "", install: false) {
+        section("<h2>📊 Scan Completo</h2>") {
+            input name: "scanDevices", type: "capability.*", title: "Selecione os dispositivos (use 'Select All')", required: false, multiple: true, submitOnChange: true
+        }
+        if (scanDevices && scanDevices.size() > 0) {
+            def db = getCachedDatabase()
+            if (db) {
+                def results = []
+                def optimal = 0
+                def improvable = 0
+                def unknown = 0
+                scanDevices.each { dev ->
+                    def devData = getDeviceZigbeeData(dev)
+                    def match = findBestMatch(db, devData)
+                    def isOptimal = isDriverOptimal(devData.currentDriver, match)
+                    if (match.confidence == 0) { unknown++ }
+                    else if (isOptimal) { optimal++ }
+                    else { improvable++ }
+                    results << [devData: devData, match: match, optimal: isOptimal]
+                }
+                state.lastScanStats = [total: results.size(), optimal: optimal, improvable: improvable, unknown: unknown, scanDate: now()]
+                section("<h3>📋 Resultado: ${results.size()} dispositivos</h3>") {
+                    paragraph "<div style='display:flex;gap:12px;margin-bottom:12px;'>" +
+                        "<span style='background:#0a3d0a;color:#2ecc71;padding:6px 12px;border-radius:8px;'>✅ Ideal: ${optimal}</span>" +
+                        "<span style='background:#3d3a0a;color:#f1c40f;padding:6px 12px;border-radius:8px;'>🟡 Melhorar: ${improvable}</span>" +
+                        "<span style='background:#3d0a0a;color:#e74c3c;padding:6px 12px;border-radius:8px;'>🔴 Sem sugestão: ${unknown}</span>" +
+                        "</div>"
+                    paragraph formatScanAllTable(results)
+                }
+            } else {
+                section("") { paragraph formatError("Não foi possível carregar o banco de dados remoto.") }
+            }
+        }
     }
-
-    data.deviceName = dev.displayName ?: "Sem nome"
-    data.deviceId = dev.id
-    data.currentDriver = dev.typeName ?: "Nenhum"
-
-    log.debug "📋 Device Data: manufacturer=${data.manufacturer}, model=${data.model}, inClusters=${data.inClusters}"
-    return data
 }
 
-/**
- * Formata as informações do dispositivo em HTML para exibição.
- */
-def formatDeviceInfo(Map devData) {
-    def html = """
-    <table style='width:100%; border-collapse:collapse; font-family:monospace; font-size:14px;'>
-        <tr style='background:#1a1a2e; color:#e94560;'>
-            <td style='padding:8px; border:1px solid #333;'><b>Nome</b></td>
-            <td style='padding:8px; border:1px solid #333;'>${devData.deviceName}</td>
-        </tr>
-        <tr style='background:#16213e; color:#eee;'>
-            <td style='padding:8px; border:1px solid #333;'><b>Manufacturer</b></td>
-            <td style='padding:8px; border:1px solid #333;'>${devData.manufacturer}</td>
-        </tr>
-        <tr style='background:#1a1a2e; color:#eee;'>
-            <td style='padding:8px; border:1px solid #333;'><b>Model</b></td>
-            <td style='padding:8px; border:1px solid #333;'>${devData.model}</td>
-        </tr>
-        <tr style='background:#16213e; color:#eee;'>
-            <td style='padding:8px; border:1px solid #333;'><b>Profile ID</b></td>
-            <td style='padding:8px; border:1px solid #333;'>${devData.profileId}</td>
-        </tr>
-        <tr style='background:#1a1a2e; color:#eee;'>
-            <td style='padding:8px; border:1px solid #333;'><b>In Clusters</b></td>
-            <td style='padding:8px; border:1px solid #333;'>${devData.inClusters}</td>
-        </tr>
-        <tr style='background:#16213e; color:#eee;'>
-            <td style='padding:8px; border:1px solid #333;'><b>Out Clusters</b></td>
-            <td style='padding:8px; border:1px solid #333;'>${devData.outClusters}</td>
-        </tr>
-        <tr style='background:#1a1a2e; color:#0f3460;'>
-            <td style='padding:8px; border:1px solid #333; color:#e94560;'><b>Driver Atual</b></td>
-            <td style='padding:8px; border:1px solid #333; color:#e94560;'>${devData.currentDriver}</td>
-        </tr>
-    </table>
-    """
-    return html
+def statsPage() {
+    dynamicPage(name: "statsPage", title: "", install: false) {
+        section("<h2>📈 Estatísticas</h2>") {}
+        def db = getCachedDatabase()
+        section("<h3>📦 Banco de Dados</h3>") {
+            def dbSize = db ? db.devices?.size() ?: 0 : 0
+            def rulesSize = db ? db.fallback_rules?.size() ?: 0 : 0
+            paragraph "<table style='width:100%;border-collapse:collapse;font-family:sans-serif;font-size:14px;'>" +
+                "<tr style='background:#16213e;'><td style='padding:8px;color:#3498db;border:1px solid #333;'><b>Versão do App</b></td><td style='padding:8px;color:#eee;border:1px solid #333;'>v${APP_VERSION}</td></tr>" +
+                "<tr style='background:#1a1a2e;'><td style='padding:8px;color:#3498db;border:1px solid #333;'><b>Dispositivos no Banco</b></td><td style='padding:8px;color:#eee;border:1px solid #333;'>${dbSize}</td></tr>" +
+                "<tr style='background:#16213e;'><td style='padding:8px;color:#3498db;border:1px solid #333;'><b>Regras de Fallback</b></td><td style='padding:8px;color:#eee;border:1px solid #333;'>${rulesSize}</td></tr>" +
+                "<tr style='background:#1a1a2e;'><td style='padding:8px;color:#3498db;border:1px solid #333;'><b>Cache</b></td><td style='padding:8px;color:#eee;border:1px solid #333;'>${getCacheStatusText()}</td></tr>" +
+                "</table>"
+        }
+        if (state.lastScanStats) {
+            def s = state.lastScanStats
+            def pctOpt = s.total > 0 ? Math.round((s.optimal / s.total) * 100) : 0
+            section("<h3>🔍 Último Scan Completo</h3>") {
+                paragraph "<table style='width:100%;border-collapse:collapse;font-family:sans-serif;font-size:14px;'>" +
+                    "<tr style='background:#0a3d0a;'><td style='padding:8px;color:#2ecc71;border:1px solid #333;'><b>✅ Com driver ideal</b></td><td style='padding:8px;color:#eee;border:1px solid #333;'>${s.optimal} (${pctOpt}%)</td></tr>" +
+                    "<tr style='background:#3d3a0a;'><td style='padding:8px;color:#f1c40f;border:1px solid #333;'><b>🟡 Com sugestão</b></td><td style='padding:8px;color:#eee;border:1px solid #333;'>${s.improvable}</td></tr>" +
+                    "<tr style='background:#3d0a0a;'><td style='padding:8px;color:#e74c3c;border:1px solid #333;'><b>🔴 Sem recomendação</b></td><td style='padding:8px;color:#eee;border:1px solid #333;'>${s.unknown}</td></tr>" +
+                    "<tr style='background:#16213e;'><td style='padding:8px;color:#3498db;border:1px solid #333;'><b>Total analisados</b></td><td style='padding:8px;color:#eee;border:1px solid #333;'>${s.total}</td></tr>" +
+                    "</table>"
+            }
+        } else {
+            section("") { paragraph "<i style='color:#888;'>Nenhum scan completo realizado ainda. Vá em 'Escanear Todos' primeiro.</i>" }
+        }
+    }
 }
 
 // ═══════════════════════════════════════════════════════
-//  BUSCA NO BANCO DE DADOS REMOTO
+//  CACHE DO BANCO DE DADOS
 // ═══════════════════════════════════════════════════════
 
-/**
- * Faz o download assíncrono do banco de dados JSON
- * e processa o resultado no callback.
- */
-def fetchDriverDatabase(Map devData) {
-    state.currentDevData = devData
-    state.lastRecommendation = null
+def getCachedDatabase() {
+    def elapsed = now() - cacheTs
+    if (cachedDb != null && elapsed < CACHE_TTL) {
+        log.debug "📦 Usando cache do banco de dados (${Math.round(elapsed/60000)} min)"
+        return cachedDb
+    }
+    log.info "📦 Cache expirado ou vazio. Baixando banco de dados..."
+    def db = fetchRemoteDatabase()
+    if (db) {
+        cachedDb = db
+        cacheTs = now()
+    }
+    return db
+}
 
+def fetchRemoteDatabase() {
     try {
-        // 1. Carregar o índice (fallback rules)
-        // No Hubitat, httpGet com contentType JSON já retorna
-        // resp.data como objeto parsado (Map/List), não como texto.
         def indexDb = [fallback_rules: [], devices: []]
         httpGet([uri: DB_INDEX_URL, contentType: "application/json", timeout: 15]) { resp ->
-            if (resp.status == 200) {
-                indexDb = resp.data
-            }
+            if (resp.status == 200) { indexDb = resp.data }
         }
-
-        // 2. Carregar cada arquivo de dispositivos e consolidar
         def allDevices = []
         DB_FILES.each { fileName ->
             try {
@@ -189,261 +200,224 @@ def fetchDriverDatabase(Map devData) {
                         allDevices.addAll(resp.data.devices)
                     }
                 }
-            } catch (e) {
-                log.warn "Falha ao carregar ${fileName}: ${e.message}"
-            }
+            } catch (e) { log.warn "Falha ao carregar ${fileName}: ${e.message}" }
         }
-
-        // 3. Montar o banco consolidado
         def db = [devices: allDevices, fallback_rules: indexDb.fallback_rules ?: []]
-        log.info "📦 Banco de dados carregado: ${allDevices.size()} dispositivos, ${db.fallback_rules.size()} regras de fallback"
-        processMatch(db, devData)
-
+        log.info "📦 Banco carregado: ${allDevices.size()} dispositivos, ${db.fallback_rules.size()} regras"
+        return db
     } catch (e) {
-        log.warn "Falha na busca remota do DB: ${e.message}. Usando fallback local."
-        processMatchFallbackOnly(devData)
+        log.error "Falha ao baixar banco de dados: ${e.message}"
+        return null
     }
 }
 
+def getCacheStatusText() {
+    if (cachedDb == null) return "<span style='color:#e74c3c;'>⚪ Não carregado</span>"
+    def elapsed = now() - cacheTs
+    def remaining = CACHE_TTL - elapsed
+    if (remaining <= 0) return "<span style='color:#f39c12;'>⏰ Expirado</span>"
+    def hours = Math.round(remaining / 3600000)
+    def mins = Math.round((remaining % 3600000) / 60000)
+    return "<span style='color:#2ecc71;'>✅ Ativo — expira em ${hours}h ${mins}m</span>"
+}
+
 // ═══════════════════════════════════════════════════════
-//  LÓGICA DE CORRESPONDÊNCIA (MATCHING)
+//  EXTRAÇÃO DE DADOS DO DISPOSITIVO
+// ═══════════════════════════════════════════════════════
+
+def getDeviceZigbeeData(dev) {
+    def data = [:]
+    try {
+        data.manufacturer = dev.getDataValue("manufacturer") ?: "Desconhecido"
+        data.model = dev.getDataValue("model") ?: "Desconhecido"
+        data.inClusters = dev.getDataValue("inClusters") ?: ""
+        data.outClusters = dev.getDataValue("outClusters") ?: ""
+        data.profileId = dev.getDataValue("profileId") ?: ""
+        data.endpointId = dev.getDataValue("endpointId") ?: "01"
+    } catch (e) {
+        log.error "Erro ao ler dados: ${e.message}"
+        data.manufacturer = "Erro"; data.model = "Erro"
+        data.inClusters = ""; data.outClusters = ""
+    }
+    data.deviceName = dev.displayName ?: "Sem nome"
+    data.deviceId = dev.id
+    data.currentDriver = dev.typeName ?: "Nenhum"
+    return data
+}
+
+// ═══════════════════════════════════════════════════════
+//  LÓGICA DE MATCHING (retorna objeto estruturado)
 // ═══════════════════════════════════════════════════════
 
 /**
- * Tenta encontrar o dispositivo no banco de dados.
- * Se não encontrar, aplica as regras de fallback.
+ * Retorna: [type: "exact"|"partial"|"prefix"|"cluster"|"none",
+ *           confidence: 3|2|1|0, data: <match>, matches: [...]]
  */
-def processMatch(Map db, Map devData) {
-    def matched = null
+def findBestMatch(Map db, Map devData) {
+    if (!db || !db.devices) return [type: "none", confidence: 0, data: null, matches: [], rules: []]
 
-    // 1. Match exato por manufacturer + model
-    if (db.devices) {
-        matched = db.devices.find { entry ->
-            entry.manufacturer?.toLowerCase() == devData.manufacturer?.toLowerCase() &&
-            entry.model?.toLowerCase() == devData.model?.toLowerCase()
-        }
+    // 1. Match exato
+    def exact = db.devices.find { e ->
+        e.manufacturer?.toLowerCase() == devData.manufacturer?.toLowerCase() &&
+        e.model?.toLowerCase() == devData.model?.toLowerCase()
     }
+    if (exact) return [type: "exact", confidence: 3, data: exact, matches: [], rules: []]
 
-    if (matched) {
-        state.lastRecommendation = formatExactMatch(matched)
-        log.info "✅ Match exato encontrado: ${matched.suggested_driver}"
-        return
+    // 2. Match parcial (mesmo fabricante)
+    def partial = db.devices.findAll { e ->
+        e.manufacturer?.toLowerCase() == devData.manufacturer?.toLowerCase()
     }
-
-    // 2. Match parcial por manufacturer apenas
-    def partialMatches = db.devices?.findAll { entry ->
-        entry.manufacturer?.toLowerCase() == devData.manufacturer?.toLowerCase()
-    }
-
-    if (partialMatches && partialMatches.size() > 0) {
-        state.lastRecommendation = formatPartialMatch(devData, partialMatches)
-        log.info "⚠️ Match parcial: mesmo fabricante, modelo diferente."
-        return
+    if (partial && partial.size() > 0) {
+        return [type: "partial", confidence: 2, data: partial[0], matches: partial.take(5), rules: []]
     }
 
     // 3. Fallback por prefixo do fabricante
     if (db.fallback_rules) {
-        def prefixRule = db.fallback_rules.find { rule ->
-            rule.condition == "manufacturer_prefix" &&
-            devData.manufacturer?.startsWith(rule.match)
+        def prefix = db.fallback_rules.find { r ->
+            r.condition == "manufacturer_prefix" && devData.manufacturer?.startsWith(r.match)
         }
-        if (prefixRule) {
-            state.lastRecommendation = formatFallbackRule(prefixRule)
-            log.info "⚠️ Fallback por fabricante: ${prefixRule.message}"
-            return
-        }
+        if (prefix) return [type: "prefix", confidence: 1, data: prefix, matches: [], rules: []]
     }
 
-    // 4. Fallback por clusters presentes
+    // 4. Fallback por clusters
     if (db.fallback_rules && devData.inClusters) {
         def clusters = devData.inClusters.replaceAll("\\s", "").split(",")
-        def clusterMatches = []
-
+        def clusterRules = []
         db.fallback_rules.findAll { it.condition == "cluster_present" }.each { rule ->
-            if (clusters.any { c -> c.equalsIgnoreCase(rule.match) }) {
-                clusterMatches << rule
-            }
+            if (clusters.any { c -> c.equalsIgnoreCase(rule.match) }) { clusterRules << rule }
         }
-
-        if (clusterMatches.size() > 0) {
-            state.lastRecommendation = formatClusterFallback(devData, clusterMatches)
-            log.info "⚠️ Fallback por clusters: ${clusterMatches.size()} sugestões."
-            return
+        if (clusterRules.size() > 0) {
+            return [type: "cluster", confidence: 1, data: null, matches: [], rules: clusterRules]
         }
     }
 
-    // 5. Nenhum match encontrado
-    state.lastRecommendation = formatNoMatch(devData)
-    log.warn "❌ Nenhum match encontrado para ${devData.manufacturer} / ${devData.model}"
+    return [type: "none", confidence: 0, data: null, matches: [], rules: []]
 }
 
-/**
- * Quando o banco remoto não está disponível, faz análise
- * local baseada apenas nos clusters do dispositivo.
- */
-def processMatchFallbackOnly(Map devData) {
-    def suggestions = []
+def isDriverOptimal(String currentDriver, Map matchResult) {
+    if (matchResult.confidence == 0) return false
+    def suggested = matchResult.data?.suggested_driver ?: ""
+    if (!suggested) return false
+    return currentDriver?.toLowerCase()?.trim() == suggested?.toLowerCase()?.trim()
+}
 
-    if (!devData.inClusters) {
-        state.lastRecommendation = formatError("Não foi possível acessar o banco de dados remoto e o dispositivo não reportou clusters. Tente novamente mais tarde.")
-        return
-    }
-
-    def clusters = devData.inClusters.replaceAll("\\s", "").split(",")
-
-    // Regras hardcoded de emergência
-    def localRules = [
-        ["0006", "Generic Zigbee Switch", "O dispositivo suporta On/Off."],
-        ["0008", "Generic Zigbee Dimmer", "O dispositivo suporta Level Control."],
-        ["0300", "Generic Zigbee RGBW Light", "O dispositivo suporta Color Control."],
-        ["0402", "Generic Zigbee Temperature Sensor", "O dispositivo suporta Temperature Measurement."],
-        ["0405", "Generic Zigbee Humidity Sensor", "O dispositivo suporta Relative Humidity."],
-        ["0500", "Generic Zigbee Motion Sensor", "O dispositivo suporta IAS Zone (Movimento/Contato)."],
-        ["EF00", "⚠️ Tuya Proprietário", "Cluster Tuya 0xEF00 detectado. Drivers genéricos NÃO funcionarão. Procure no HPM por 'Tuya'."]
-    ]
-
-    localRules.each { rule ->
-        if (clusters.any { c -> c.equalsIgnoreCase(rule[0]) }) {
-            suggestions << [driver: rule[1], message: rule[2]]
-        }
-    }
-
-    if (suggestions.size() > 0) {
-        state.lastRecommendation = formatLocalFallback(devData, suggestions)
-    } else {
-        state.lastRecommendation = formatError("Modo offline: Nenhuma sugestão disponível para os clusters reportados.")
+def getConfidenceStars(int confidence) {
+    switch(confidence) {
+        case 3: return "⭐⭐⭐"
+        case 2: return "⭐⭐"
+        case 1: return "⭐"
+        default: return "—"
     }
 }
 
 // ═══════════════════════════════════════════════════════
-//  FORMATAÇÃO HTML DOS RESULTADOS
+//  FORMATAÇÃO HTML
 // ═══════════════════════════════════════════════════════
 
-def formatExactMatch(Map match) {
-    def hpmBadge = match.hpm_available ?
-        "<span style='background:#27ae60; color:#fff; padding:2px 8px; border-radius:4px; font-size:12px;'>✅ Disponível no HPM</span>" :
-        "<span style='background:#2980b9; color:#fff; padding:2px 8px; border-radius:4px; font-size:12px;'>📦 Driver Built-in</span>"
-
-    def linkHtml = match.url ? "<br/><a href='${match.url}' target='_blank' style='color:#3498db;'>🔗 Ver no Fórum da Comunidade</a>" : ""
-
-    return """
-    <div style='background:#0a3d0a; border:2px solid #27ae60; border-radius:12px; padding:16px; font-family:sans-serif;'>
-        <h3 style='color:#2ecc71; margin:0 0 8px 0;'>✅ Driver Encontrado!</h3>
-        <p style='color:#eee; font-size:16px; margin:4px 0;'><b>Driver Recomendado:</b> ${match.suggested_driver}</p>
-        <p style='color:#bbb; font-size:14px; margin:4px 0;'><b>Tipo de Dispositivo:</b> ${match.device_type}</p>
-        <p style='color:#bbb; font-size:14px; margin:4px 0;'><b>Autor:</b> ${match.author}</p>
-        <p style='margin:8px 0;'>${hpmBadge}</p>
-        ${linkHtml}
-        <hr style='border-color:#333; margin:12px 0;'/>
-        <p style='color:#888; font-size:12px;'>
-            <b>Como instalar:</b> ${match.hpm_available ? "Abra o <b>Hubitat Package Manager</b>, clique em <b>Install</b>, procure por '<b>${match.suggested_driver}</b>' e instale. Depois, vá ao dispositivo e troque o driver." : "Vá ao dispositivo, clique em <b>Type</b> e selecione '<b>${match.suggested_driver}</b>' na lista de drivers built-in."}
-        </p>
-    </div>
-    """
+def formatDeviceInfo(Map d) {
+    return "<table style='width:100%;border-collapse:collapse;font-family:monospace;font-size:14px;'>" +
+        "<tr style='background:#1a1a2e;color:#e94560;'><td style='padding:8px;border:1px solid #333;'><b>Nome</b></td><td style='padding:8px;border:1px solid #333;'>${d.deviceName}</td></tr>" +
+        "<tr style='background:#16213e;color:#eee;'><td style='padding:8px;border:1px solid #333;'><b>Manufacturer</b></td><td style='padding:8px;border:1px solid #333;'>${d.manufacturer}</td></tr>" +
+        "<tr style='background:#1a1a2e;color:#eee;'><td style='padding:8px;border:1px solid #333;'><b>Model</b></td><td style='padding:8px;border:1px solid #333;'>${d.model}</td></tr>" +
+        "<tr style='background:#16213e;color:#eee;'><td style='padding:8px;border:1px solid #333;'><b>In Clusters</b></td><td style='padding:8px;border:1px solid #333;'>${d.inClusters}</td></tr>" +
+        "<tr style='background:#1a1a2e;color:#eee;'><td style='padding:8px;border:1px solid #333;'><b>Out Clusters</b></td><td style='padding:8px;border:1px solid #333;'>${d.outClusters}</td></tr>" +
+        "<tr style='background:#16213e;color:#e94560;'><td style='padding:8px;border:1px solid #333;'><b>Driver Atual</b></td><td style='padding:8px;border:1px solid #333;'>${d.currentDriver}</td></tr>" +
+        "</table>"
 }
 
-def formatPartialMatch(Map devData, List matches) {
-    def matchList = matches.collect { m ->
-        "<li style='color:#eee;'><b>${m.model}</b> → ${m.suggested_driver} (por ${m.author})</li>"
-    }.join("\n")
+def formatMatchResult(Map result, Map devData) {
+    def optimal = isDriverOptimal(devData.currentDriver, result)
+    def stars = getConfidenceStars(result.confidence)
 
-    return """
-    <div style='background:#3d3a0a; border:2px solid #f39c12; border-radius:12px; padding:16px; font-family:sans-serif;'>
-        <h3 style='color:#f1c40f; margin:0 0 8px 0;'>⚠️ Match Parcial</h3>
-        <p style='color:#eee;'>O modelo exato <b>${devData.model}</b> não foi encontrado, mas encontramos outros dispositivos do mesmo fabricante (<b>${devData.manufacturer}</b>):</p>
-        <ul style='margin:8px 0;'>${matchList}</ul>
-        <p style='color:#bbb; font-size:13px;'>Tente um dos drivers acima — fabricantes costumam reutilizar o mesmo firmware entre modelos similares.</p>
-    </div>
-    """
+    switch(result.type) {
+        case "exact":
+            def m = result.data
+            def hpmBadge = m.hpm_available ?
+                "<span style='background:#27ae60;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;'>✅ HPM</span>" :
+                "<span style='background:#2980b9;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;'>📦 Built-in</span>"
+            def optBadge = optimal ?
+                "<div style='background:#0a3d0a;border:1px solid #2ecc71;border-radius:8px;padding:8px;margin-top:8px;'><b style='color:#2ecc71;'>✅ Você já está usando o driver ideal!</b></div>" : ""
+            return "<div style='background:#0a3d0a;border:2px solid #27ae60;border-radius:12px;padding:16px;font-family:sans-serif;'>" +
+                "<h3 style='color:#2ecc71;margin:0 0 8px 0;'>✅ Driver Encontrado! ${stars}</h3>" +
+                "<p style='color:#eee;font-size:16px;margin:4px 0;'><b>Driver Recomendado:</b> ${m.suggested_driver}</p>" +
+                "<p style='color:#bbb;font-size:14px;margin:4px 0;'><b>Tipo:</b> ${m.device_type} | <b>Autor:</b> ${m.author}</p>" +
+                "<p style='margin:8px 0;'>${hpmBadge}</p>${optBadge}</div>"
+
+        case "partial":
+            def list = result.matches.collect { m -> "<li style='color:#eee;'><b>${m.model}</b> → ${m.suggested_driver} (${m.author})</li>" }.join("")
+            return "<div style='background:#3d3a0a;border:2px solid #f39c12;border-radius:12px;padding:16px;font-family:sans-serif;'>" +
+                "<h3 style='color:#f1c40f;margin:0 0 8px 0;'>⚠️ Match Parcial ${stars}</h3>" +
+                "<p style='color:#eee;'>Modelo <b>${devData.model}</b> não encontrado, mas há drivers do mesmo fabricante (<b>${devData.manufacturer}</b>):</p>" +
+                "<ul style='margin:8px 0;'>${list}</ul></div>"
+
+        case "prefix":
+            def r = result.data
+            def link = r.url ? "<br/><a href='${r.url}' target='_blank' style='color:#3498db;'>🔗 Ver Referência</a>" : ""
+            return "<div style='background:#3d2a0a;border:2px solid #e67e22;border-radius:12px;padding:16px;font-family:sans-serif;'>" +
+                "<h3 style='color:#e67e22;margin:0 0 8px 0;'>⚠️ Recomendação por Fabricante ${stars}</h3>" +
+                "<p style='color:#eee;font-size:14px;'>${r.message}</p>${link}</div>"
+
+        case "cluster":
+            def rList = result.rules.collect { r ->
+                def dt = r.suggested_driver ? " → <b>${r.suggested_driver}</b>" : ""
+                "<li style='color:#eee;'>${r.message}${dt}</li>"
+            }.join("")
+            return "<div style='background:#0a2a3d;border:2px solid #2980b9;border-radius:12px;padding:16px;font-family:sans-serif;'>" +
+                "<h3 style='color:#3498db;margin:0 0 8px 0;'>🔎 Análise por Clusters ${stars}</h3>" +
+                "<p style='color:#bbb;'>Dispositivo <b>${devData.manufacturer} / ${devData.model}</b> não no banco. Sugestões baseadas nos clusters:</p>" +
+                "<ul style='margin:8px 0;'>${rList}</ul></div>"
+
+        default:
+            return "<div style='background:#3d0a0a;border:2px solid #c0392b;border-radius:12px;padding:16px;font-family:sans-serif;'>" +
+                "<h3 style='color:#e74c3c;margin:0 0 8px 0;'>❌ Dispositivo Não Reconhecido</h3>" +
+                "<p style='color:#eee;'>Sem recomendação para: <b>${devData.manufacturer} / ${devData.model}</b></p>" +
+                "<p style='color:#bbb;font-size:13px;'>Procure no <a href='https://community.hubitat.com/' target='_blank' style='color:#3498db;'>Fórum</a> ou no HPM.</p></div>"
+    }
 }
 
-def formatFallbackRule(Map rule) {
-    def linkHtml = rule.url ? "<br/><a href='${rule.url}' target='_blank' style='color:#3498db;'>🔗 Ver Referência</a>" : ""
-
-    return """
-    <div style='background:#3d2a0a; border:2px solid #e67e22; border-radius:12px; padding:16px; font-family:sans-serif;'>
-        <h3 style='color:#e67e22; margin:0 0 8px 0;'>⚠️ Recomendação por Fabricante</h3>
-        <p style='color:#eee; font-size:14px;'>${rule.message}</p>
-        ${rule.suggested_driver ? "<p style='color:#eee;'><b>Driver sugerido:</b> ${rule.suggested_driver}</p>" : ""}
-        ${linkHtml}
-    </div>
-    """
-}
-
-def formatClusterFallback(Map devData, List clusterRules) {
-    def ruleList = clusterRules.collect { r ->
-        def driverText = r.suggested_driver ? " → <b>${r.suggested_driver}</b>" : ""
-        "<li style='color:#eee;'>${r.message}${driverText}</li>"
-    }.join("\n")
-
-    return """
-    <div style='background:#0a2a3d; border:2px solid #2980b9; border-radius:12px; padding:16px; font-family:sans-serif;'>
-        <h3 style='color:#3498db; margin:0 0 8px 0;'>🔎 Análise por Clusters</h3>
-        <p style='color:#bbb;'>O dispositivo <b>${devData.manufacturer} / ${devData.model}</b> não foi encontrado no banco de dados, mas analisando seus clusters Zigbee, sugerimos:</p>
-        <ul style='margin:8px 0;'>${ruleList}</ul>
-        <p style='color:#888; font-size:12px;'>Dica: Comece pelo driver mais específico (ex: RGBW se tiver Color Control) e teste.</p>
-    </div>
-    """
-}
-
-def formatLocalFallback(Map devData, List suggestions) {
-    def suggList = suggestions.collect { s ->
-        "<li style='color:#eee;'><b>${s.driver}</b> — ${s.message}</li>"
-    }.join("\n")
-
-    return """
-    <div style='background:#2a0a3d; border:2px solid #8e44ad; border-radius:12px; padding:16px; font-family:sans-serif;'>
-        <h3 style='color:#9b59b6; margin:0 0 8px 0;'>📡 Modo Offline — Análise Local</h3>
-        <p style='color:#bbb;'>Não foi possível acessar o banco de dados remoto. Baseado nos clusters do dispositivo:</p>
-        <ul style='margin:8px 0;'>${suggList}</ul>
-    </div>
-    """
-}
-
-def formatNoMatch(Map devData) {
-    return """
-    <div style='background:#3d0a0a; border:2px solid #c0392b; border-radius:12px; padding:16px; font-family:sans-serif;'>
-        <h3 style='color:#e74c3c; margin:0 0 8px 0;'>❌ Dispositivo Não Reconhecido</h3>
-        <p style='color:#eee;'>Não encontramos uma recomendação para:</p>
-        <p style='color:#eee; font-family:monospace;'>Manufacturer: <b>${devData.manufacturer}</b><br/>Model: <b>${devData.model}</b></p>
-        <hr style='border-color:#333;'/>
-        <p style='color:#bbb; font-size:13px;'>
-            <b>O que fazer agora:</b><br/>
-            1. Procure no <a href='https://community.hubitat.com/' target='_blank' style='color:#3498db;'>Fórum da Comunidade</a> pelo modelo: <b>${devData.model}</b><br/>
-            2. Verifique o <b>Hubitat Package Manager</b> (HPM) por drivers do fabricante.<br/>
-            3. Se for um dispositivo simples (switch, sensor), tente um driver <b>Generic Zigbee</b> compatível com os clusters acima.
-        </p>
-    </div>
-    """
+def formatScanAllTable(List results) {
+    def rows = ""
+    results.each { r ->
+        def d = r.devData
+        def m = r.match
+        def opt = r.optimal
+        def suggested = m.data?.suggested_driver ?: (m.rules?.size() > 0 ? m.rules[0].suggested_driver ?: "Ver clusters" : "—")
+        def bgColor = m.confidence == 0 ? "#3d0a0a" : (opt ? "#0a3d0a" : "#3d3a0a")
+        def statusIcon = m.confidence == 0 ? "🔴" : (opt ? "✅" : "🟡")
+        def stars = getConfidenceStars(m.confidence)
+        rows += "<tr style='background:${bgColor};'>" +
+            "<td style='padding:6px 8px;border:1px solid #333;color:#eee;'>${d.deviceName}</td>" +
+            "<td style='padding:6px 8px;border:1px solid #333;color:#bbb;'>${d.manufacturer}</td>" +
+            "<td style='padding:6px 8px;border:1px solid #333;color:#bbb;'>${d.model}</td>" +
+            "<td style='padding:6px 8px;border:1px solid #333;color:#888;'>${d.currentDriver}</td>" +
+            "<td style='padding:6px 8px;border:1px solid #333;color:#eee;'><b>${suggested}</b></td>" +
+            "<td style='padding:6px 8px;border:1px solid #333;text-align:center;'>${stars}</td>" +
+            "<td style='padding:6px 8px;border:1px solid #333;text-align:center;'>${statusIcon}</td>" +
+            "</tr>"
+    }
+    return "<div style='overflow-x:auto;'><table style='width:100%;border-collapse:collapse;font-family:sans-serif;font-size:13px;'>" +
+        "<tr style='background:#0f3460;'>" +
+        "<th style='padding:8px;border:1px solid #333;color:#e94560;text-align:left;'>Dispositivo</th>" +
+        "<th style='padding:8px;border:1px solid #333;color:#e94560;text-align:left;'>Fabricante</th>" +
+        "<th style='padding:8px;border:1px solid #333;color:#e94560;text-align:left;'>Modelo</th>" +
+        "<th style='padding:8px;border:1px solid #333;color:#e94560;text-align:left;'>Driver Atual</th>" +
+        "<th style='padding:8px;border:1px solid #333;color:#e94560;text-align:left;'>Recomendado</th>" +
+        "<th style='padding:8px;border:1px solid #333;color:#e94560;text-align:center;'>Confiança</th>" +
+        "<th style='padding:8px;border:1px solid #333;color:#e94560;text-align:center;'>Status</th>" +
+        "</tr>${rows}</table></div>"
 }
 
 def formatError(String msg) {
-    return """
-    <div style='background:#3d0a0a; border:2px solid #e74c3c; border-radius:12px; padding:16px; font-family:sans-serif;'>
-        <h3 style='color:#e74c3c; margin:0 0 8px 0;'>⚠️ Erro</h3>
-        <p style='color:#eee;'>${msg}</p>
-    </div>
-    """
+    return "<div style='background:#3d0a0a;border:2px solid #e74c3c;border-radius:12px;padding:16px;font-family:sans-serif;'>" +
+        "<h3 style='color:#e74c3c;margin:0 0 8px 0;'>⚠️ Erro</h3>" +
+        "<p style='color:#eee;'>${msg}</p></div>"
 }
 
 // ═══════════════════════════════════════════════════════
-//  MÉTODOS DE CICLO DE VIDA
+//  CICLO DE VIDA
 // ═══════════════════════════════════════════════════════
 
-def installed() {
-    log.info "Zigbee Driver Finder instalado."
-    initialize()
-}
-
-def updated() {
-    log.info "Zigbee Driver Finder atualizado."
-    initialize()
-}
-
-def initialize() {
-    log.info "Zigbee Driver Finder v${APP_VERSION} inicializado."
-}
-
-def uninstalled() {
-    log.info "Zigbee Driver Finder desinstalado."
-}
+def installed() { log.info "Zigbee Driver Finder v${APP_VERSION} instalado."; initialize() }
+def updated() { log.info "Zigbee Driver Finder v${APP_VERSION} atualizado."; initialize() }
+def initialize() { log.info "Zigbee Driver Finder v${APP_VERSION} inicializado." }
+def uninstalled() { log.info "Zigbee Driver Finder desinstalado." }
