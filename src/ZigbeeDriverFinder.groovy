@@ -89,19 +89,19 @@ def mainPage() {
 
 /**
  * Extrai as informações Zigbee relevantes de um dispositivo.
- * Usa device.getData() para obter manufacturer, model, etc.
+ * Usa device.getDataValue() — a API correta do Hubitat para
+ * ler campos individuais do fingerprint Zigbee.
  */
 def getDeviceZigbeeData(dev) {
     def data = [:]
     
     try {
-        def rawData = dev.getData()
-        data.manufacturer = rawData?.manufacturer ?: "Desconhecido"
-        data.model = rawData?.model ?: "Desconhecido"
-        data.inClusters = rawData?.inClusters ?: ""
-        data.outClusters = rawData?.outClusters ?: ""
-        data.profileId = rawData?.profileId ?: ""
-        data.endpointId = rawData?.endpointId ?: ""
+        data.manufacturer = dev.getDataValue("manufacturer") ?: "Desconhecido"
+        data.model = dev.getDataValue("model") ?: "Desconhecido"
+        data.inClusters = dev.getDataValue("inClusters") ?: ""
+        data.outClusters = dev.getDataValue("outClusters") ?: ""
+        data.profileId = dev.getDataValue("profileId") ?: ""
+        data.endpointId = dev.getDataValue("endpointId") ?: "01"
     } catch (e) {
         log.error "Erro ao ler dados do dispositivo: ${e.message}"
         data.manufacturer = "Erro"
@@ -114,6 +114,7 @@ def getDeviceZigbeeData(dev) {
     data.deviceId = dev.id
     data.currentDriver = dev.typeName ?: "Nenhum"
 
+    log.debug "📋 Device Data: manufacturer=${data.manufacturer}, model=${data.model}, inClusters=${data.inClusters}"
     return data
 }
 
@@ -170,10 +171,12 @@ def fetchDriverDatabase(Map devData) {
 
     try {
         // 1. Carregar o índice (fallback rules)
+        // No Hubitat, httpGet com contentType JSON já retorna
+        // resp.data como objeto parsado (Map/List), não como texto.
         def indexDb = [fallback_rules: [], devices: []]
         httpGet([uri: DB_INDEX_URL, contentType: "application/json", timeout: 15]) { resp ->
             if (resp.status == 200) {
-                indexDb = new JsonSlurper().parseText(resp.data.text)
+                indexDb = resp.data
             }
         }
 
@@ -182,9 +185,8 @@ def fetchDriverDatabase(Map devData) {
         DB_FILES.each { fileName ->
             try {
                 httpGet([uri: DB_BASE_URL + fileName, contentType: "application/json", timeout: 10]) { resp ->
-                    if (resp.status == 200) {
-                        def partial = new JsonSlurper().parseText(resp.data.text)
-                        if (partial.devices) allDevices.addAll(partial.devices)
+                    if (resp.status == 200 && resp.data?.devices) {
+                        allDevices.addAll(resp.data.devices)
                     }
                 }
             } catch (e) {
