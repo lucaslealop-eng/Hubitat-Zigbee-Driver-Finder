@@ -39,7 +39,7 @@ preferences {
 }
 
 // ─── Constantes ────────────────────────────────────────
-@groovy.transform.Field static final String DB_BASE_URL = "https://raw.githubusercontent.com/YOUR_USER/Zigbee_Driver_Finder/main/data/"
+@groovy.transform.Field static final String DB_BASE_URL = "https://raw.githubusercontent.com/lucaslealop-eng/Hubitat-Zigbee-Driver-Finder/main/data/"
 @groovy.transform.Field static final List<String> DB_FILES = ["db_tuya.json", "db_xiaomi_aqara.json", "db_brands.json", "db_other_brands.json", "db_misc_zigbee.json", "db_hpm_scraped.json"]
 @groovy.transform.Field static final String DB_INDEX_URL = DB_BASE_URL + "zigbee_driver_db.json"
 @groovy.transform.Field static final String APP_VERSION = "2.0.0"
