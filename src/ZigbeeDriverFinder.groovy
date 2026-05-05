@@ -64,36 +64,53 @@ def mainPage() {
         section("<h2>🔍 Zigbee Driver Finder v${APP_VERSION}</h2>") {
             paragraph "<i>Encontre o driver ideal para qualquer dispositivo Zigbee do seu hub.</i>"
         }
+        section("<h3>⚙️ Configuração</h3>") {
+            input name: "hubDevices", type: "capability.*", title: "Selecione TODOS os dispositivos do hub (necessário apenas uma vez)", required: false, multiple: true, submitOnChange: true
+        }
+        def zigbeeCount = getZigbeeDevices()?.size() ?: 0
+        def totalCount = hubDevices?.size() ?: 0
+        if (totalCount > 0) {
+            section("") {
+                paragraph "<span style='color:#2ecc71;font-size:14px;'>📡 <b>${zigbeeCount}</b> dispositivos Zigbee detectados de ${totalCount} selecionados.</span>"
+            }
+        }
         section("Menu Principal") {
-            href "scanSinglePage", title: "🔎 Pesquisar Dispositivo Individual", description: "Selecione um dispositivo e veja a recomendação detalhada"
-            href "scanAllPage", title: "📊 Escanear Todos os Dispositivos", description: "Analise todos os Zigbee de uma vez e veja um relatório completo"
+            href "scanSinglePage", title: "🔎 Pesquisar Dispositivo Individual", description: "Selecione um dispositivo Zigbee e veja a recomendação detalhada"
+            href "scanAllPage", title: "📊 Escanear Todos os Zigbee", description: "Analise todos os dispositivos Zigbee de uma vez"
             href "statsPage", title: "📈 Estatísticas", description: "Resumo do hub e status do banco de dados"
         }
-        def cacheStatus = getCacheStatusText()
         section("<h3>💾 Cache</h3>") {
-            paragraph cacheStatus
+            paragraph getCacheStatusText()
         }
     }
 }
 
 def scanSinglePage() {
     dynamicPage(name: "scanSinglePage", title: "", install: false) {
+        def zigbeeList = getZigbeeDeviceOptions()
         section("<h2>🔎 Pesquisa Individual</h2>") {
-            input name: "selectedDevice", type: "capability.*", title: "Dispositivo Zigbee", required: false, submitOnChange: true
-        }
-        if (selectedDevice) {
-            def db = getCachedDatabase()
-            def devData = getDeviceZigbeeData(selectedDevice)
-            section("<h3>📋 Informações do Dispositivo</h3>") {
-                paragraph formatDeviceInfo(devData)
-            }
-            if (db) {
-                def result = findBestMatch(db, devData)
-                section("<h3>🎯 Recomendação de Driver</h3>") {
-                    paragraph formatMatchResult(result, devData)
-                }
+            if (zigbeeList.size() == 0) {
+                paragraph "<span style='color:#e74c3c;'>⚠️ Nenhum dispositivo Zigbee encontrado. Volte ao Menu Principal e selecione os dispositivos do hub primeiro.</span>"
             } else {
-                section("") { paragraph formatError("Não foi possível carregar o banco de dados remoto.") }
+                input name: "selectedZigbeeId", type: "enum", title: "Dispositivo Zigbee (${zigbeeList.size()} disponíveis)", options: zigbeeList, required: false, submitOnChange: true
+            }
+        }
+        if (selectedZigbeeId) {
+            def dev = getZigbeeDevices().find { it.id.toString() == selectedZigbeeId }
+            if (dev) {
+                def db = getCachedDatabase()
+                def devData = getDeviceZigbeeData(dev)
+                section("<h3>📋 Informações do Dispositivo</h3>") {
+                    paragraph formatDeviceInfo(devData)
+                }
+                if (db) {
+                    def result = findBestMatch(db, devData)
+                    section("<h3>🎯 Recomendação de Driver</h3>") {
+                        paragraph formatMatchResult(result, devData)
+                    }
+                } else {
+                    section("") { paragraph formatError("Não foi possível carregar o banco de dados remoto.") }
+                }
             }
         }
     }
@@ -101,33 +118,37 @@ def scanSinglePage() {
 
 def scanAllPage() {
     dynamicPage(name: "scanAllPage", title: "", install: false) {
-        section("<h2>📊 Scan Completo</h2>") {
-            input name: "scanDevices", type: "capability.*", title: "Selecione os dispositivos (use 'Select All')", required: false, multiple: true, submitOnChange: true
+        def zigbeeDevs = getZigbeeDevices()
+        section("<h2>📊 Scan Completo — ${zigbeeDevs.size()} Dispositivos Zigbee</h2>") {}
+        if (!zigbeeDevs || zigbeeDevs.size() == 0) {
+            section("") {
+                paragraph "<span style='color:#e74c3c;'>⚠️ Nenhum dispositivo Zigbee encontrado. Volte ao Menu Principal e selecione os dispositivos do hub primeiro.</span>"
+            }
+            return
         }
-        if (scanDevices && scanDevices.size() > 0) {
-            def db = getCachedDatabase()
-            if (db) {
-                def results = []
-                def optimal = 0
-                def improvable = 0
-                def unknown = 0
-                scanDevices.each { dev ->
-                    def devData = getDeviceZigbeeData(dev)
-                    def match = findBestMatch(db, devData)
-                    def isOptimal = isDriverOptimal(devData.currentDriver, match)
-                    if (match.confidence == 0) { unknown++ }
-                    else if (isOptimal) { optimal++ }
-                    else { improvable++ }
-                    results << [devData: devData, match: match, optimal: isOptimal]
-                }
-                state.lastScanStats = [total: results.size(), optimal: optimal, improvable: improvable, unknown: unknown, scanDate: now()]
-                section("<h3>📋 Resultado: ${results.size()} dispositivos</h3>") {
-                    paragraph "<div style='display:flex;gap:12px;margin-bottom:12px;'>" +
-                        "<span style='background:#0a3d0a;color:#2ecc71;padding:6px 12px;border-radius:8px;'>✅ Ideal: ${optimal}</span>" +
-                        "<span style='background:#3d3a0a;color:#f1c40f;padding:6px 12px;border-radius:8px;'>🟡 Melhorar: ${improvable}</span>" +
-                        "<span style='background:#3d0a0a;color:#e74c3c;padding:6px 12px;border-radius:8px;'>🔴 Sem sugestão: ${unknown}</span>" +
-                        "</div>"
-                    paragraph formatScanAllTable(results)
+        def db = getCachedDatabase()
+        if (db) {
+            def results = []
+            def optimal = 0
+            def improvable = 0
+            def unknown = 0
+            zigbeeDevs.each { dev ->
+                def devData = getDeviceZigbeeData(dev)
+                def match = findBestMatch(db, devData)
+                def isOptimal = isDriverOptimal(devData.currentDriver, match)
+                if (match.confidence == 0) { unknown++ }
+                else if (isOptimal) { optimal++ }
+                else { improvable++ }
+                results << [devData: devData, match: match, optimal: isOptimal]
+            }
+            state.lastScanStats = [total: results.size(), optimal: optimal, improvable: improvable, unknown: unknown, scanDate: now()]
+            section("<h3>📋 Resultado: ${results.size()} dispositivos Zigbee</h3>") {
+                paragraph "<div style='display:flex;gap:12px;margin-bottom:12px;'>" +
+                    "<span style='background:#0a3d0a;color:#2ecc71;padding:6px 12px;border-radius:8px;'>✅ Ideal: ${optimal}</span>" +
+                    "<span style='background:#3d3a0a;color:#f1c40f;padding:6px 12px;border-radius:8px;'>🟡 Melhorar: ${improvable}</span>" +
+                    "<span style='background:#3d0a0a;color:#e74c3c;padding:6px 12px;border-radius:8px;'>🔴 Sem sugestão: ${unknown}</span>" +
+                    "</div>"
+                paragraph formatScanAllTable(results)
                 }
             } else {
                 section("") { paragraph formatError("Não foi possível carregar o banco de dados remoto.") }
@@ -165,6 +186,37 @@ def statsPage() {
             section("") { paragraph "<i style='color:#888;'>Nenhum scan completo realizado ainda. Vá em 'Escanear Todos' primeiro.</i>" }
         }
     }
+}
+
+// ═══════════════════════════════════════════════════════
+//  FILTRO DE DISPOSITIVOS ZIGBEE
+// ═══════════════════════════════════════════════════════
+
+/**
+ * Filtra os dispositivos selecionados pelo usuário,
+ * retornando apenas os que possuem dados Zigbee (manufacturer != null).
+ */
+def getZigbeeDevices() {
+    if (!hubDevices) return []
+    return hubDevices.findAll { dev ->
+        def mfg = null
+        try { mfg = dev.getDataValue("manufacturer") } catch (e) {}
+        return mfg != null && mfg != ""
+    }
+}
+
+/**
+ * Gera um Map [id: "nome (fabricante / modelo)"] para uso em input enum.
+ */
+def getZigbeeDeviceOptions() {
+    def zigbee = getZigbeeDevices()
+    def options = [:]
+    zigbee.each { dev ->
+        def mfg = dev.getDataValue("manufacturer") ?: "?"
+        def mdl = dev.getDataValue("model") ?: "?"
+        options[dev.id.toString()] = "${dev.displayName} (${mfg} / ${mdl})"
+    }
+    return options
 }
 
 // ═══════════════════════════════════════════════════════
