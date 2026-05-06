@@ -149,10 +149,9 @@ def scanAllPage() {
                     "<span style='background:#3d0a0a;color:#e74c3c;padding:6px 12px;border-radius:8px;'>🔴 Sem sugestão: ${unknown}</span>" +
                     "</div>"
                 paragraph formatScanAllTable(results)
-                }
-            } else {
-                section("") { paragraph formatError("Não foi possível carregar o banco de dados remoto.") }
             }
+        } else {
+            section("") { paragraph formatError("Não foi possível carregar o banco de dados remoto.") }
         }
     }
 }
