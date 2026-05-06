@@ -1,0 +1,11 @@
+{
+  "name": "hubitat-zigbee-driver-finder",
+  "version": "1.0.0",
+  "description": "Scraper para atualizar o banco de dados de drivers Zigbee do HPM",
+  "main": "scripts/hpm_scraper.js",
+  "scripts": {
+    "scrape": "node scripts/hpm_scraper.js"
+  },
+  "author": "Lucas",
+  "license": "ISC"
+}
