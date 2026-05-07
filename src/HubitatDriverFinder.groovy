@@ -1,6 +1,6 @@
 /**
  * ========================================================
- *  Hubitat Driver Finder v2.3.0
+ *  Hubitat Driver Finder v2.4.0
  * ========================================================
  *  SmartApp para Hubitat Elevation
  *
@@ -9,8 +9,8 @@
  *  e clusters reportados.
  *
  *  Autor: Lucas (Hubitat Agent Project)
- *  Versão: 2.3.0
- *  Data: 2026-05-05
+ *  Versão: 2.4.0
+ *  Data: 2026-05-07
  *
  *  Funcionalidades:
  *   - Pesquisa individual de dispositivo
@@ -19,6 +19,7 @@
  *   - Comparação driver atual vs. recomendado
  *   - Ranking de confiança (⭐⭐⭐ / ⭐⭐ / ⭐)
  *   - Página de estatísticas
+ *   - Indicação HPM disponível + link do driver/autor
  * ========================================================
  */
 
@@ -49,7 +50,7 @@ preferences {
 @Field static String DB_BASE_URL = "https://raw.githubusercontent.com/lucaslealop-eng/Hubitat-Zigbee-Driver-Finder/main/data/"
 @Field static List DB_FILES = ["db_overrides.json", "db_company_devices.json", "db_zwave_devices.json", "db_zwave_hpm_scraped.json", "db_tuya.json", "db_xiaomi_aqara.json", "db_brands.json", "db_other_brands.json", "db_misc_zigbee.json", "db_hpm_scraped.json", "db_zigbee2mqtt_devices.json", "db_zwavejs_devices.json"]
 @Field static String DB_INDEX_URL = "https://raw.githubusercontent.com/lucaslealop-eng/Hubitat-Zigbee-Driver-Finder/main/data/zigbee_driver_db.json"
-@Field static String APP_VERSION = "2.3.0"
+@Field static String APP_VERSION = "2.4.0"
 
 // ─── Cache Estático (JVM memory, não state) ────────────
 @Field static Map cachedDb = null
@@ -732,8 +733,13 @@ def formatMatchResult(Map result, Map devData) {
             def deviceType = htmlEscape(m.device_type)
             def author = htmlEscape(m.author)
             def hpmBadge = m.hpm_available ?
-                "<span style='background:#27ae60;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;'>✅ HPM</span>" :
-                "<span style='background:#2980b9;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;'>📦 Built-in</span>"
+                "<span style='background:#27ae60;color:#fff;padding:4px 12px;border-radius:6px;font-size:13px;font-weight:bold;'>✅ Disponível no HPM</span>" :
+                "<span style='background:#2980b9;color:#fff;padding:4px 12px;border-radius:6px;font-size:13px;font-weight:bold;'>📦 Driver Built-in (já incluso no Hubitat)</span>"
+            def hpmHint = m.hpm_available ?
+                "<p style='color:#7dcea0;font-size:12px;margin:4px 0 0 0;'>💡 Instale via Hubitat Package Manager para atualizações automáticas.</p>" :
+                "<p style='color:#85c1e9;font-size:12px;margin:4px 0 0 0;'>ℹ️ Já vem instalado no Hubitat. Selecione na lista de drivers do dispositivo.</p>"
+            def driverLink = (m.url && m.url.toString().trim()) ?
+                "<p style='margin:8px 0 0 0;'><a href='${htmlEscape(m.url)}' target='_blank' style='color:#3498db;font-size:14px;text-decoration:none;'>🔗 Ver página do driver / GitHub do autor</a></p>" : ""
             def optBadge = optimal ?
                 "<div style='background:#0a3d0a;border:1px solid #2ecc71;border-radius:8px;padding:8px;margin-top:8px;'><b style='color:#2ecc71;'>✅ Você já está usando o driver ideal!</b></div>" : ""
             def reason = result.reason ? "<p style='color:#bbb;font-size:13px;margin:6px 0;'><b>Motivo:</b> ${htmlEscape(result.reason)}</p>" : ""
@@ -743,10 +749,19 @@ def formatMatchResult(Map result, Map devData) {
                 "<h3 style='color:#2ecc71;margin:0 0 8px 0;'>✅ Driver Encontrado! ${stars}</h3>" +
                 "<p style='color:#eee;font-size:16px;margin:4px 0;'><b>Driver Recomendado:</b> ${driverName}</p>" +
                 "<p style='color:#bbb;font-size:14px;margin:4px 0;'><b>Tipo:</b> ${deviceType} | <b>Autor:</b> ${author}</p>" +
-                "<p style='margin:8px 0;'>${hpmBadge}</p>${reason}${score}${optBadge}${alternatives}</div>"
+                "<div style='margin:10px 0;padding:10px;background:#0d470d;border-radius:8px;'>" +
+                "<p style='margin:0 0 4px 0;'>${hpmBadge}</p>${hpmHint}${driverLink}</div>" +
+                "${reason}${score}${optBadge}${alternatives}</div>"
 
         case "partial":
-            def list = result.matches.collect { m -> "<li style='color:#eee;'><b>${htmlEscape(m.model)}</b> → ${htmlEscape(m.suggested_driver)} (${htmlEscape(m.author)})</li>" }.join("")
+            def list = result.matches.collect { m ->
+                def mHpmBadge = m.hpm_available ?
+                    "<span style='background:#27ae60;color:#fff;padding:1px 6px;border-radius:4px;font-size:11px;'>HPM</span>" :
+                    "<span style='background:#2980b9;color:#fff;padding:1px 6px;border-radius:4px;font-size:11px;'>Built-in</span>"
+                def mLink = (m.url && m.url.toString().trim()) ?
+                    " <a href='${htmlEscape(m.url)}' target='_blank' style='color:#3498db;font-size:12px;text-decoration:none;'>🔗</a>" : ""
+                "<li style='color:#eee;margin:4px 0;'><b>${htmlEscape(m.model)}</b> → ${htmlEscape(m.suggested_driver)} (${htmlEscape(m.author)}) ${mHpmBadge}${mLink}</li>"
+            }.join("")
             return "<div style='background:#3d3a0a;border:2px solid #f39c12;border-radius:12px;padding:16px;font-family:sans-serif;'>" +
                 "<h3 style='color:#f1c40f;margin:0 0 8px 0;'>⚠️ Match Parcial ${stars}</h3>" +
                 "<p style='color:#eee;'>Modelo <b>${htmlEscape(devData.model)}</b> não encontrado, mas há drivers do mesmo fabricante (<b>${htmlEscape(devData.manufacturer)}</b>):</p>" +
@@ -806,6 +821,18 @@ def formatScanAllTable(List results) {
         def bgColor = m.confidence == 0 ? "#3d0a0a" : (opt ? "#0a3d0a" : "#3d3a0a")
         def statusIcon = m.confidence == 0 ? "🔴" : (opt ? "✅" : "🟡")
         def stars = getConfidenceStars(m.confidence)
+        def hpmCell = ""
+        def linkCell = ""
+        if (m.confidence > 0 && m.data) {
+            hpmCell = m.data.hpm_available ?
+                "<span style='background:#27ae60;color:#fff;padding:1px 6px;border-radius:4px;font-size:11px;'>HPM</span>" :
+                "<span style='background:#2980b9;color:#fff;padding:1px 6px;border-radius:4px;font-size:11px;'>Built-in</span>"
+            linkCell = (m.data.url && m.data.url.toString().trim()) ?
+                "<a href='${htmlEscape(m.data.url)}' target='_blank' style='color:#3498db;text-decoration:none;'>🔗</a>" : "—"
+        } else {
+            hpmCell = "—"
+            linkCell = "—"
+        }
         rows += "<tr style='background:${bgColor};'>" +
             "<td style='padding:6px 8px;border:1px solid #333;color:#eee;'>${htmlEscape(d.deviceName)}</td>" +
             "<td style='padding:6px 8px;border:1px solid #333;color:#bbb;'>${protocol}</td>" +
@@ -813,6 +840,8 @@ def formatScanAllTable(List results) {
             "<td style='padding:6px 8px;border:1px solid #333;color:#bbb;'>${htmlEscape(d.model)}</td>" +
             "<td style='padding:6px 8px;border:1px solid #333;color:#888;'>${htmlEscape(d.currentDriver)}</td>" +
             "<td style='padding:6px 8px;border:1px solid #333;color:#eee;'><b>${suggested}</b></td>" +
+            "<td style='padding:6px 8px;border:1px solid #333;text-align:center;'>${hpmCell}</td>" +
+            "<td style='padding:6px 8px;border:1px solid #333;text-align:center;'>${linkCell}</td>" +
             "<td style='padding:6px 8px;border:1px solid #333;text-align:center;'>${stars}</td>" +
             "<td style='padding:6px 8px;border:1px solid #333;text-align:center;'>${statusIcon}</td>" +
             "</tr>"
@@ -825,6 +854,8 @@ def formatScanAllTable(List results) {
         "<th style='padding:8px;border:1px solid #333;color:#e94560;text-align:left;'>Modelo</th>" +
         "<th style='padding:8px;border:1px solid #333;color:#e94560;text-align:left;'>Driver Atual</th>" +
         "<th style='padding:8px;border:1px solid #333;color:#e94560;text-align:left;'>Recomendado</th>" +
+        "<th style='padding:8px;border:1px solid #333;color:#e94560;text-align:center;'>HPM</th>" +
+        "<th style='padding:8px;border:1px solid #333;color:#e94560;text-align:center;'>Link</th>" +
         "<th style='padding:8px;border:1px solid #333;color:#e94560;text-align:center;'>Confiança</th>" +
         "<th style='padding:8px;border:1px solid #333;color:#e94560;text-align:center;'>Status</th>" +
         "</tr>${rows}</table></div>"
