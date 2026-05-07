@@ -15,7 +15,9 @@ const sourceLabels = {
   'db_brands.json': 'IKEA/Philips/SONOFF/Third Reality',
   'db_other_brands.json': 'Sengled/OSRAM/Innr/GLEDOPTO/CentraLite/Yale/etc',
   'db_misc_zigbee.json': 'Inovelli/SmartThings/Bosch/Securifi/Leviton/Jasco/etc',
-  'db_hpm_scraped.json': 'Hubitat Package Manager Extracted Zigbee Database'
+  'db_hpm_scraped.json': 'Hubitat Package Manager Extracted Zigbee Database',
+  'db_zigbee2mqtt_devices.json': 'Zigbee2MQTT public identification database',
+  'db_zwavejs_devices.json': 'Z-Wave JS public identification database'
 };
 
 const sourceOrder = [
@@ -28,7 +30,9 @@ const sourceOrder = [
   'db_brands.json',
   'db_other_brands.json',
   'db_misc_zigbee.json',
-  'db_hpm_scraped.json'
+  'db_hpm_scraped.json',
+  'db_zigbee2mqtt_devices.json',
+  'db_zwavejs_devices.json'
 ];
 
 let total = 0;
@@ -43,7 +47,7 @@ for (const file of sourceOrder) {
   sources.push(`${file} (${count} devices - ${sourceLabels[file] || 'Device database'})`);
 }
 
-index.version = '2.2.1';
+index.version = '2.3.0';
 index.last_updated = new Date().toISOString().slice(0, 10);
 index.total_devices = total;
 index.sources = sources;

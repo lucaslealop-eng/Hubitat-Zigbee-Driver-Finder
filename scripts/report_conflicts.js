@@ -12,7 +12,9 @@ const priority = {
   'db_brands.json': 30,
   'db_other_brands.json': 40,
   'db_misc_zigbee.json': 50,
-  'db_hpm_scraped.json': 100
+  'db_hpm_scraped.json': 100,
+  'db_zigbee2mqtt_devices.json': 200,
+  'db_zwavejs_devices.json': 200
 };
 
 const devices = [];
@@ -41,6 +43,7 @@ const categories = {
   company_vs_other: [],
   curated_vs_curated: [],
   curated_vs_hpm: [],
+  public_vs_known: [],
   hpm_only: [],
   other: []
 };
@@ -48,9 +51,11 @@ const categories = {
 for (const group of conflicts) {
   const files = new Set(group.map((device) => device._file));
   const nonHpm = group.filter((device) => device._file !== 'db_hpm_scraped.json');
+  const hasPublic = files.has('db_zigbee2mqtt_devices.json') || files.has('db_zwavejs_devices.json');
 
   if (files.has('db_company_devices.json')) categories.company_vs_other.push(group);
   else if (files.has('db_overrides.json')) categories.company_vs_other.push(group);
+  else if (hasPublic) categories.public_vs_known.push(group);
   else if (nonHpm.length >= 2) categories.curated_vs_curated.push(group);
   else if (files.has('db_hpm_scraped.json') && nonHpm.length === 1) categories.curated_vs_hpm.push(group);
   else if (files.size === 1 && files.has('db_hpm_scraped.json')) categories.hpm_only.push(group);

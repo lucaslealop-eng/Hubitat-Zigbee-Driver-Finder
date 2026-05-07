@@ -138,7 +138,7 @@ async function main() {
   });
 
   const db = {
-    version: '2.2.1',
+    version: '2.3.0',
     source: 'Company Google Sheets',
     source_url: SHEET_CSV_URL,
     last_updated: new Date().toISOString().slice(0, 10),

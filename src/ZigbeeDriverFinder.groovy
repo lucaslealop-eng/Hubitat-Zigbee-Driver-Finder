@@ -1,6 +1,6 @@
 /**
  * ========================================================
- *  Hubitat Driver Finder v2.2.1
+ *  Hubitat Driver Finder v2.3.0
  * ========================================================
  *  SmartApp para Hubitat Elevation
  *
@@ -9,7 +9,7 @@
  *  e clusters reportados.
  *
  *  Autor: Lucas (Hubitat Agent Project)
- *  Versão: 2.2.1
+ *  Versão: 2.3.0
  *  Data: 2026-05-05
  *
  *  Funcionalidades:
@@ -47,9 +47,9 @@ preferences {
 
 // ─── Constantes ────────────────────────────────────────
 @Field static String DB_BASE_URL = "https://raw.githubusercontent.com/lucaslealop-eng/Hubitat-Zigbee-Driver-Finder/main/data/"
-@Field static List DB_FILES = ["db_overrides.json", "db_company_devices.json", "db_zwave_devices.json", "db_zwave_hpm_scraped.json", "db_tuya.json", "db_xiaomi_aqara.json", "db_brands.json", "db_other_brands.json", "db_misc_zigbee.json", "db_hpm_scraped.json"]
+@Field static List DB_FILES = ["db_overrides.json", "db_company_devices.json", "db_zwave_devices.json", "db_zwave_hpm_scraped.json", "db_tuya.json", "db_xiaomi_aqara.json", "db_brands.json", "db_other_brands.json", "db_misc_zigbee.json", "db_hpm_scraped.json", "db_zigbee2mqtt_devices.json", "db_zwavejs_devices.json"]
 @Field static String DB_INDEX_URL = "https://raw.githubusercontent.com/lucaslealop-eng/Hubitat-Zigbee-Driver-Finder/main/data/zigbee_driver_db.json"
-@Field static String APP_VERSION = "2.2.1"
+@Field static String APP_VERSION = "2.3.0"
 
 // ─── Cache Estático (JVM memory, não state) ────────────
 @Field static Map cachedDb = null
@@ -424,6 +424,8 @@ def getSourcePriority(String fileName) {
         case "db_other_brands.json": return 40
         case "db_misc_zigbee.json": return 50
         case "db_hpm_scraped.json": return 100
+        case "db_zigbee2mqtt_devices.json": return 200
+        case "db_zwavejs_devices.json": return 200
         default: return 999
     }
 }
@@ -588,6 +590,9 @@ def scoreCandidate(Map entry, Map devData, String matchKind) {
         case "db_company_devices.json": score += 80; reasons << "base propria da empresa"; break
         case "db_zwave_devices.json": score += 70; reasons << "base Z-Wave curada"; break
         case "db_hpm_scraped.json": score += 25; reasons << "driver encontrado no HPM"; break
+        case "db_zwave_hpm_scraped.json": score += 25; reasons << "driver encontrado no HPM"; break
+        case "db_zigbee2mqtt_devices.json": score += 5; reasons << "fonte publica de identificacao"; break
+        case "db_zwavejs_devices.json": score += 5; reasons << "fonte publica de identificacao"; break
         default: score += 50; reasons << "base curada"
     }
 

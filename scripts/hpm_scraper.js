@@ -173,8 +173,8 @@ async function scrape() {
         return;
     }
 
-    fs.writeFileSync('./data/db_hpm_scraped.json', `${JSON.stringify({ version: '2.2.1', devices: zigbeeDevices }, null, 2)}\n`);
-    fs.writeFileSync('./data/db_zwave_hpm_scraped.json', `${JSON.stringify({ version: '2.2.1', devices: zwaveDevices }, null, 2)}\n`);
+    fs.writeFileSync('./data/db_hpm_scraped.json', `${JSON.stringify({ version: '2.3.0', devices: zigbeeDevices }, null, 2)}\n`);
+    fs.writeFileSync('./data/db_zwave_hpm_scraped.json', `${JSON.stringify({ version: '2.3.0', devices: zwaveDevices }, null, 2)}\n`);
 
     console.log('\n========================================');
     console.log(`Done! Scraped ${zigbeeDevices.length} Zigbee devices and ${zwaveDevices.length} Z-Wave devices.`);
