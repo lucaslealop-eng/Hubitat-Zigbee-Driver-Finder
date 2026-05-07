@@ -1,6 +1,6 @@
 /**
  * ========================================================
- *  Hubitat Driver Finder v2.2.0
+ *  Hubitat Driver Finder v2.2.1
  * ========================================================
  *  SmartApp para Hubitat Elevation
  *
@@ -9,7 +9,7 @@
  *  e clusters reportados.
  *
  *  Autor: Lucas (Hubitat Agent Project)
- *  Versão: 2.2.0
+ *  Versão: 2.2.1
  *  Data: 2026-05-05
  *
  *  Funcionalidades:
@@ -49,7 +49,7 @@ preferences {
 @Field static String DB_BASE_URL = "https://raw.githubusercontent.com/lucaslealop-eng/Hubitat-Zigbee-Driver-Finder/main/data/"
 @Field static List DB_FILES = ["db_overrides.json", "db_company_devices.json", "db_zwave_devices.json", "db_zwave_hpm_scraped.json", "db_tuya.json", "db_xiaomi_aqara.json", "db_brands.json", "db_other_brands.json", "db_misc_zigbee.json", "db_hpm_scraped.json"]
 @Field static String DB_INDEX_URL = "https://raw.githubusercontent.com/lucaslealop-eng/Hubitat-Zigbee-Driver-Finder/main/data/zigbee_driver_db.json"
-@Field static String APP_VERSION = "2.2.0"
+@Field static String APP_VERSION = "2.2.1"
 
 // ─── Cache Estático (JVM memory, não state) ────────────
 @Field static Map cachedDb = null
@@ -242,6 +242,7 @@ def getSupportedDevices() {
 
 def getDeviceProtocol(dev) {
     def msr = getZwaveMsr(dev)
+    def zwNodeInfo = safeDataValue(dev, "zwNodeInfo")
     def inClusters = safeDataValue(dev, "inClusters")
     def outClusters = safeDataValue(dev, "outClusters")
     def mfg = safeDataValue(dev, "manufacturer")
@@ -251,8 +252,10 @@ def getDeviceProtocol(dev) {
     def zwModel = getZwaveProductId(dev)
 
     if (msr) return "zwave"
-    if (inClusters || outClusters) return "zigbee"
+    if (zwNodeInfo) return "zwave"
     if (zwMfr && zwProd && zwModel) return "zwave"
+    if (looksLikeZwaveCommandClasses(inClusters)) return "zwave"
+    if (inClusters || outClusters) return "zigbee"
     if (mfg && model && "${mfg}".startsWith("_")) return "zigbee"
     return "unknown"
 }
@@ -276,6 +279,23 @@ def normalizeHexId(value) {
     return raw.padLeft(4, "0")
 }
 
+def normalizeHubZwaveId(value) {
+    def raw = "${value ?: ''}".trim().replaceFirst("(?i)^0x", "").toUpperCase()
+    if (!raw) return ""
+    if (!(raw ==~ /[0-9A-F]+/)) return ""
+    if (raw ==~ /[0-9]+/) {
+        def numeric = raw.toInteger()
+        if (numeric > 255 || raw.length() < 4) return Integer.toHexString(numeric).toUpperCase().padLeft(4, "0")
+    }
+    return raw.padLeft(4, "0")
+}
+
+def looksLikeZwaveCommandClasses(String clusters) {
+    def raw = "${clusters ?: ''}".trim()
+    if (!raw) return false
+    return raw.contains("0x5E") || raw.contains("0x86") || raw.contains("0x72") || raw.contains("0x85") || raw.contains("0x9F")
+}
+
 def getZwaveMsr(dev) {
     def msr = firstDataValue(dev, ["MSR", "msr"])
     if (!msr) return ""
@@ -291,15 +311,15 @@ def getZwaveMsrPart(dev, int index) {
 }
 
 def getZwaveMfrId(dev) {
-    return getZwaveMsrPart(dev, 0) ?: normalizeHexId(firstDataValue(dev, ["manufacturerId", "manufacturer"]))
+    return getZwaveMsrPart(dev, 0) ?: normalizeHubZwaveId(firstDataValue(dev, ["manufacturerId", "manufacturer"]))
 }
 
 def getZwaveProductTypeId(dev) {
-    return getZwaveMsrPart(dev, 1) ?: normalizeHexId(firstDataValue(dev, ["productTypeId", "deviceType", "productType"]))
+    return getZwaveMsrPart(dev, 1) ?: normalizeHubZwaveId(firstDataValue(dev, ["productTypeId", "deviceType", "productType", "deviceTypeId"]))
 }
 
 def getZwaveProductId(dev) {
-    return getZwaveMsrPart(dev, 2) ?: normalizeHexId(firstDataValue(dev, ["productId", "deviceId", "model"]))
+    return getZwaveMsrPart(dev, 2) ?: normalizeHubZwaveId(firstDataValue(dev, ["productId", "deviceId", "deviceIdType", "model"]))
 }
 
 /**

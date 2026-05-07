@@ -1,4 +1,4 @@
-# Hubitat Driver Finder 2.2
+# Hubitat Driver Finder 2.2.1
 
 Identifique dispositivos Zigbee e Z-Wave pareados no Hubitat e veja qual driver usar sem pesquisar manualmente em foruns.
 
@@ -8,7 +8,7 @@ O Hubitat Driver Finder e um SmartApp para Hubitat Elevation. Ele le as informac
 
 Para Zigbee, o app usa `manufacturer`, `model`, `inClusters` e `outClusters`.
 
-Para Z-Wave, o app usa a fingerprint por IDs: `manufacturer_id`, `product_type_id` e `product_id`. Se ainda nao houver uma fingerprint exata no banco, ele tenta uma sugestao generica baseada no tipo aparente do dispositivo.
+Para Z-Wave, o app usa a fingerprint por IDs: `manufacturer_id`, `product_type_id` e `product_id`. No Hubitat esses dados podem aparecer como `MSR` ou como campos decimais `Manufacturer`, `Device Type` e `Device Id`; o app normaliza esses formatos automaticamente. Se ainda nao houver uma fingerprint exata no banco, ele tenta uma sugestao generica baseada no tipo aparente do dispositivo.
 
 ## Como funciona?
 
@@ -63,6 +63,7 @@ Importante: esta versao nao tem modo offline. Se o hub nao conseguir acessar o b
 - Fallback generico para alguns tipos Z-Wave quando ainda nao existe fingerprint exata.
 - Botao no app para limpar o cache de 24h e baixar a database novamente.
 - Scraper HPM agora coleta fingerprints Zigbee e Z-Wave.
+- Deteccao Z-Wave corrigida para dispositivos que mostram command classes em `In Clusters`.
 - Base de dispositivos proprios da empresa importada do Google Sheets com prioridade alta.
 - Prioridade explicita da base curada sobre dados raspados do HPM.
 - Correcao da regra Tuya `_TZE`, que tem prioridade sobre `_TZ`.

@@ -1,11 +1,11 @@
 {
-  "version": "2.2.0",
+  "version": "2.2.1",
   "last_updated": "2026-05-07",
-  "total_devices": 1494,
+  "total_devices": 1495,
   "sources": [
     "db_overrides.json (2 devices - manual conflict overrides, absolute priority)",
     "db_company_devices.json (20 devices - Company Google Sheets, highest priority)",
-    "db_zwave_devices.json (0 devices - curated Z-Wave fingerprints)",
+    "db_zwave_devices.json (1 devices - curated Z-Wave fingerprints)",
     "db_zwave_hpm_scraped.json (163 devices - Hubitat Package Manager Extracted Z-Wave Database)",
     "db_tuya.json (65 devices - Tuya/Moes/Zemismart)",
     "db_xiaomi_aqara.json (31 devices - Xiaomi/Aqara/LUMI)",

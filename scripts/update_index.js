@@ -43,7 +43,7 @@ for (const file of sourceOrder) {
   sources.push(`${file} (${count} devices - ${sourceLabels[file] || 'Device database'})`);
 }
 
-index.version = '2.2.0';
+index.version = '2.2.1';
 index.last_updated = new Date().toISOString().slice(0, 10);
 index.total_devices = total;
 index.sources = sources;

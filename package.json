@@ -1,6 +1,6 @@
 {
   "name": "hubitat-driver-finder",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "SmartApp e ferramentas para recomendar drivers Zigbee e Z-Wave no Hubitat",
   "main": "scripts/hpm_scraper.js",
   "scripts": {

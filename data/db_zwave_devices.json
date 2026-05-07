@@ -1,5 +1,19 @@
 {
-  "version": "2.2.0",
+  "version": "2.2.1",
   "source": "Curated Z-Wave device fingerprints",
-  "devices": []
+  "devices": [
+    {
+      "protocol": "zwave",
+      "manufacturer_id": "015F",
+      "product_type_id": "2420",
+      "product_id": "8203",
+      "device_type": "Z-Wave Plug",
+      "device_class": "outlet",
+      "suggested_driver": "Zooz ZEN Plugs Advanced",
+      "author": "Company Validated",
+      "hpm_available": true,
+      "url": "",
+      "driver_scope": "specific"
+    }
+  ]
 }
