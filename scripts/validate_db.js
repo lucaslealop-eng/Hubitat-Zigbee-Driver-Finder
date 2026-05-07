@@ -27,7 +27,11 @@ for (const file of dbFiles) {
   }
 
   parsed.devices.forEach((device, index) => {
-    const missing = ['manufacturer', 'model', 'device_type', 'suggested_driver', 'author', 'hpm_available']
+    const protocol = String(device.protocol || 'zigbee').toLowerCase();
+    const requiredFingerprint = protocol === 'zwave'
+      ? ['manufacturer_id', 'product_type_id', 'product_id']
+      : ['manufacturer', 'model'];
+    const missing = [...requiredFingerprint, 'device_type', 'suggested_driver', 'author', 'hpm_available']
       .filter((field) => device[field] === undefined || device[field] === null || device[field] === '');
 
     if (missing.length > 0) {
@@ -41,7 +45,10 @@ for (const file of dbFiles) {
 
 const byFingerprint = new Map();
 for (const device of allDevices) {
-  const key = `${String(device.manufacturer).toLowerCase()}|${String(device.model).toLowerCase()}`;
+  const protocol = String(device.protocol || 'zigbee').toLowerCase();
+  const key = protocol === 'zwave'
+    ? `zwave|${String(device.manufacturer_id).toLowerCase()}|${String(device.product_type_id).toLowerCase()}|${String(device.product_id).toLowerCase()}`
+    : `zigbee|${String(device.manufacturer).toLowerCase()}|${String(device.model).toLowerCase()}`;
   if (!byFingerprint.has(key)) byFingerprint.set(key, []);
   byFingerprint.get(key).push(device);
 }
@@ -56,7 +63,7 @@ console.log(`Duplicate fingerprints: ${duplicateGroups.length}`);
 console.log(`Conflicting recommendations: ${conflictGroups.length}`);
 
 if (conflictGroups.length > 0) {
-  console.warn('[WARN] Conflicts are allowed because the app prioritizes curated DB files over db_hpm_scraped.json.');
+  console.warn('[WARN] Conflicts are allowed because the app uses overrides, source priority, and scoring to choose the most likely driver.');
 }
 
 process.exit(hasError ? 1 : 0);

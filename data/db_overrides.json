@@ -1,0 +1,34 @@
+{
+  "version": "2.1.0",
+  "source": "Manual conflict overrides",
+  "devices": [
+    {
+      "protocol": "zigbee",
+      "manufacturer": "_TZE200_pay2byax",
+      "model": "TS0601",
+      "device_type": "Smoke Detector",
+      "device_class": "smoke",
+      "suggested_driver": "Tuya Zigbee Smoke Detector",
+      "author": "kkossev",
+      "hpm_available": true,
+      "url": "",
+      "driver_scope": "specific",
+      "confidence_override": 95,
+      "reason": "Resolve curated conflict for this reused Tuya TS0601 fingerprint."
+    },
+    {
+      "protocol": "zigbee",
+      "manufacturer": "_TZE200_dwcarsat",
+      "model": "TS0601",
+      "device_type": "Smart Siren/Alarm",
+      "device_class": "siren",
+      "suggested_driver": "Tuya Zigbee Siren",
+      "author": "kkossev",
+      "hpm_available": true,
+      "url": "",
+      "driver_scope": "specific",
+      "confidence_override": 95,
+      "reason": "Resolve curated conflict for this reused Tuya TS0601 fingerprint."
+    }
+  ]
+}

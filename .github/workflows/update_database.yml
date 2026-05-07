@@ -31,6 +31,9 @@ jobs:
     - name: Import Company Sheet
       run: npm run import-company-sheet
 
+    - name: Update Database Index
+      run: npm run update-index
+
     - name: Validate Database
       run: npm run validate-db
 
@@ -38,7 +41,7 @@ jobs:
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
         commit_message: "Auto-update: bancos HPM e planilha da empresa sincronizados"
-        file_pattern: "data/db_hpm_scraped.json data/db_company_devices.json"
+        file_pattern: "data/db_hpm_scraped.json data/db_zwave_hpm_scraped.json data/db_company_devices.json data/zigbee_driver_db.json"
         commit_user_name: "github-actions[bot]"
         commit_user_email: "41898282+github-actions[bot]@users.noreply.github.com"
         commit_author: "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"

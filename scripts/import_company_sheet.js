@@ -77,19 +77,36 @@ function rowToDevice(row) {
   }
 
   return {
+    protocol: 'zigbee',
     manufacturer: zigbeeManufacturer,
     model: zigbeeModel,
     device_type: [category, description].filter(Boolean).join(' - ') || 'Dispositivo Zigbee',
+    device_class: inferDeviceClass(`${category} ${description} ${driver}`),
     suggested_driver: driver,
     author: brand || 'Company Sheet',
     hpm_available: isYes(row[8]),
     url: '',
+    driver_scope: 'specific',
     company_brand: brand,
     company_model: companyModel,
     company_description: description,
     in_clusters: clean(row[9]),
     out_clusters: clean(row[10])
   };
+}
+
+function inferDeviceClass(text) {
+  const value = String(text || '').toLowerCase();
+  if (value.includes('termostato') || value.includes('thermostat')) return 'thermostat';
+  if (value.includes('cortina') || value.includes('curtain') || value.includes('cover')) return 'shade';
+  if (value.includes('rgb') || value.includes('color')) return 'color_light';
+  if (value.includes('dimmer')) return 'dimmer';
+  if (value.includes('relay') || value.includes('switch') || value.includes('interruptor')) return 'switch';
+  if (value.includes('porta') || value.includes('janela') || value.includes('contact')) return 'contact';
+  if (value.includes('movimento') || value.includes('presença') || value.includes('presence') || value.includes('motion')) return 'motion';
+  if (value.includes('humidity') || value.includes('umidade')) return 'humidity';
+  if (value.includes('temperature') || value.includes('temperatura')) return 'temperature';
+  return '';
 }
 
 async function readCsv() {
@@ -121,7 +138,7 @@ async function main() {
   });
 
   const db = {
-    version: '2.0.0',
+    version: '2.2.0',
     source: 'Company Google Sheets',
     source_url: SHEET_CSV_URL,
     last_updated: new Date().toISOString().slice(0, 10),
