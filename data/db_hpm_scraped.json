@@ -20,9 +20,9 @@
     },
     {
       "manufacturer": "Inovelli",
-      "model": "VZM31-SN",
+      "model": "VZM32-SN",
       "device_type": "Inovelli Drivers (Gen 2)",
-      "suggested_driver": "Inovelli Dimmer 2-in-1 Blue Series VZM31-SN",
+      "suggested_driver": "Inovelli mmWave Dimmer Blue Series VZM32-SN",
       "author": "Eric Maycock",
       "hpm_available": true,
       "url": ""
@@ -38,18 +38,18 @@
     },
     {
       "manufacturer": "Inovelli",
-      "model": "VZM36",
+      "model": "VZM31-SN",
       "device_type": "Inovelli Drivers (Gen 2)",
-      "suggested_driver": "Inovelli Fan + Light Blue Series VZM36",
+      "suggested_driver": "Inovelli Dimmer 2-in-1 Blue Series VZM31-SN",
       "author": "Eric Maycock",
       "hpm_available": true,
       "url": ""
     },
     {
       "manufacturer": "Inovelli",
-      "model": "VZM32-SN",
+      "model": "VZM36",
       "device_type": "Inovelli Drivers (Gen 2)",
-      "suggested_driver": "Inovelli mmWave Dimmer Blue Series VZM32-SN",
+      "suggested_driver": "Inovelli Fan + Light Blue Series VZM36",
       "author": "Eric Maycock",
       "hpm_available": true,
       "url": ""
@@ -688,7 +688,7 @@
       "manufacturer": "PLAID SYSTEMS",
       "model": "PS-SPRZ16-01",
       "device_type": "Spruce V1 (non wifi) Controller",
-      "suggested_driver": "",
+      "suggested_driver": "Spruce V1 (non wifi) Controller",
       "author": "Larry Kahn",
       "hpm_available": true,
       "url": ""
@@ -730,46 +730,10 @@
       "url": ""
     },
     {
-      "manufacturer": "Stelpro",
-      "model": "STZB402+",
-      "device_type": "StelPro Ki Zigbee Thermostat",
-      "suggested_driver": "Stelpro Ki ZigBee Thermostat",
-      "author": "Neil Jackson",
-      "hpm_available": true,
-      "url": ""
-    },
-    {
-      "manufacturer": "Stelpro",
-      "model": "ST218",
-      "device_type": "StelPro Ki Zigbee Thermostat",
-      "suggested_driver": "Stelpro Ki ZigBee Thermostat",
-      "author": "Neil Jackson",
-      "hpm_available": true,
-      "url": ""
-    },
-    {
-      "manufacturer": "_TZ1800_ladpngdx",
-      "model": "TS0211",
-      "device_type": "Silvercrest Doorbell HG06668",
-      "suggested_driver": "Silvercrest Doorbell HG06668",
-      "author": "Vincent van Didden",
-      "hpm_available": true,
-      "url": ""
-    },
-    {
       "manufacturer": "AlertMe.com",
-      "model": "Keyfob Device",
+      "model": "Alarm Detector",
       "device_type": "AlertMe Drivers from BirdsLikeWires",
-      "suggested_driver": "AlertMe Fob",
-      "author": "Andrew Davison",
-      "hpm_available": true,
-      "url": ""
-    },
-    {
-      "manufacturer": "AlertMe.com",
-      "model": "Smart Plug",
-      "device_type": "AlertMe Drivers from BirdsLikeWires",
-      "suggested_driver": "AlertMe Smart Plug",
+      "suggested_driver": "AlertMe Alarm Sensor",
       "author": "Andrew Davison",
       "hpm_available": true,
       "url": ""
@@ -785,9 +749,36 @@
     },
     {
       "manufacturer": "AlertMe.com",
-      "model": "PIR Device",
+      "model": "Keyfob Device",
       "device_type": "AlertMe Drivers from BirdsLikeWires",
-      "suggested_driver": "AlertMe Motion Sensor",
+      "suggested_driver": "AlertMe Fob",
+      "author": "Andrew Davison",
+      "hpm_available": true,
+      "url": ""
+    },
+    {
+      "manufacturer": "_TZ1800_ladpngdx",
+      "model": "TS0211",
+      "device_type": "Silvercrest Doorbell HG06668",
+      "suggested_driver": "Silvercrest Doorbell HG06668",
+      "author": "Vincent van Didden",
+      "hpm_available": true,
+      "url": ""
+    },
+    {
+      "manufacturer": "AlertMe.com",
+      "model": "Button Depice",
+      "device_type": "AlertMe Drivers from BirdsLikeWires",
+      "suggested_driver": "AlertMe Button",
+      "author": "Andrew Davison",
+      "hpm_available": true,
+      "url": ""
+    },
+    {
+      "manufacturer": "AlertMe.com",
+      "model": "Button Device",
+      "device_type": "AlertMe Drivers from BirdsLikeWires",
+      "suggested_driver": "AlertMe Button",
       "author": "Andrew Davison",
       "hpm_available": true,
       "url": ""
@@ -812,10 +803,46 @@
     },
     {
       "manufacturer": "AlertMe.com",
-      "model": "Alarm Detector",
+      "model": "Care Pendant Device",
       "device_type": "AlertMe Drivers from BirdsLikeWires",
-      "suggested_driver": "AlertMe Alarm Sensor",
+      "suggested_driver": "AlertMe Pendant",
       "author": "Andrew Davison",
+      "hpm_available": true,
+      "url": ""
+    },
+    {
+      "manufacturer": "AlertMe.com",
+      "model": "Smart Plug",
+      "device_type": "AlertMe Drivers from BirdsLikeWires",
+      "suggested_driver": "AlertMe Smart Plug",
+      "author": "Andrew Davison",
+      "hpm_available": true,
+      "url": ""
+    },
+    {
+      "manufacturer": "AlertMe.com",
+      "model": "PIR Device",
+      "device_type": "AlertMe Drivers from BirdsLikeWires",
+      "suggested_driver": "AlertMe Motion Sensor",
+      "author": "Andrew Davison",
+      "hpm_available": true,
+      "url": ""
+    },
+    {
+      "manufacturer": "Stelpro",
+      "model": "STZB402+",
+      "device_type": "StelPro Ki Zigbee Thermostat",
+      "suggested_driver": "Stelpro Ki ZigBee Thermostat",
+      "author": "Neil Jackson",
+      "hpm_available": true,
+      "url": ""
+    },
+    {
+      "manufacturer": "Stelpro",
+      "model": "ST218",
+      "device_type": "StelPro Ki Zigbee Thermostat",
+      "suggested_driver": "Stelpro Ki ZigBee Thermostat",
+      "author": "Neil Jackson",
       "hpm_available": true,
       "url": ""
     },
@@ -833,33 +860,6 @@
       "model": "Lamp Device",
       "device_type": "AlertMe Drivers from BirdsLikeWires",
       "suggested_driver": "AlertMe Lamp",
-      "author": "Andrew Davison",
-      "hpm_available": true,
-      "url": ""
-    },
-    {
-      "manufacturer": "AlertMe.com",
-      "model": "Button Depice",
-      "device_type": "AlertMe Drivers from BirdsLikeWires",
-      "suggested_driver": "AlertMe Button",
-      "author": "Andrew Davison",
-      "hpm_available": true,
-      "url": ""
-    },
-    {
-      "manufacturer": "AlertMe.com",
-      "model": "Button Device",
-      "device_type": "AlertMe Drivers from BirdsLikeWires",
-      "suggested_driver": "AlertMe Button",
-      "author": "Andrew Davison",
-      "hpm_available": true,
-      "url": ""
-    },
-    {
-      "manufacturer": "AlertMe.com",
-      "model": "Care Pendant Device",
-      "device_type": "AlertMe Drivers from BirdsLikeWires",
-      "suggested_driver": "AlertMe Pendant",
       "author": "Andrew Davison",
       "hpm_available": true,
       "url": ""
@@ -1667,18 +1667,9 @@
     },
     {
       "manufacturer": "Computime",
-      "model": "SLR1",
-      "device_type": "Hive Drivers from BirdsLikeWires",
-      "suggested_driver": "Hive Receiver",
-      "author": "Andrew Davison",
-      "hpm_available": true,
-      "url": ""
-    },
-    {
-      "manufacturer": "Computime",
       "model": "SLR2",
       "device_type": "Hive Drivers from BirdsLikeWires",
-      "suggested_driver": "Hive Receiver",
+      "suggested_driver": "Hive Receiver Heating",
       "author": "Andrew Davison",
       "hpm_available": true,
       "url": ""
@@ -1693,10 +1684,10 @@
       "url": ""
     },
     {
-      "manufacturer": "_TZ3000_vmpbygs5",
-      "model": "TS011F",
-      "device_type": "Lidl Drivers from BirdsLikeWires",
-      "suggested_driver": "Lidl Smart Extension HG06338",
+      "manufacturer": "Computime",
+      "model": "SLR1",
+      "device_type": "Hive Drivers from BirdsLikeWires",
+      "suggested_driver": "Hive Receiver",
       "author": "Andrew Davison",
       "hpm_available": true,
       "url": ""
@@ -1706,6 +1697,15 @@
       "model": "TS011F",
       "device_type": "Lidl Drivers from BirdsLikeWires",
       "suggested_driver": "Lidl Smart Plug HG06337",
+      "author": "Andrew Davison",
+      "hpm_available": true,
+      "url": ""
+    },
+    {
+      "manufacturer": "_TZ3000_vmpbygs5",
+      "model": "TS011F",
+      "device_type": "Lidl Drivers from BirdsLikeWires",
+      "suggested_driver": "Lidl Smart Extension HG06338",
       "author": "Andrew Davison",
       "hpm_available": true,
       "url": ""
@@ -1783,15 +1783,6 @@
       "url": ""
     },
     {
-      "manufacturer": "_TYZB01_kvwjujy9",
-      "model": "TS0222",
-      "device_type": "Moes ZSS-ZK-THL_TS0222",
-      "suggested_driver": "Moes ZSS-ZK-THL sensor (TS0222)",
-      "author": "Krassimir Kossev",
-      "hpm_available": true,
-      "url": ""
-    },
-    {
       "manufacturer": "Lutron",
       "model": "Z3-1BRL",
       "device_type": "Lutron Aurora Dimmer Driver",
@@ -1801,10 +1792,28 @@
       "url": ""
     },
     {
+      "manufacturer": "_TYZB01_kvwjujy9",
+      "model": "TS0222",
+      "device_type": "Moes ZSS-ZK-THL_TS0222",
+      "suggested_driver": "Moes ZSS-ZK-THL sensor (TS0222)",
+      "author": "Krassimir Kossev",
+      "hpm_available": true,
+      "url": ""
+    },
+    {
       "manufacturer": "Sinope Technologies",
-      "model": "TH1400ZB",
+      "model": "RM3250ZB",
       "device_type": "Zigbee Driver for Sinope device",
-      "suggested_driver": "Thermostat TH1400ZB",
+      "suggested_driver": "Load Controller RM3250ZB with energy meter",
+      "author": "Samuel C. Auclair",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/drivers-for-zigbee-sinope-devices/91960"
+    },
+    {
+      "manufacturer": "Sinope Technologies",
+      "model": "RM3500ZB",
+      "device_type": "Zigbee Driver for Sinope device",
+      "suggested_driver": "Water heater controller RM3500ZB with energy meter",
       "author": "Samuel C. Auclair",
       "hpm_available": true,
       "url": "https://community.hubitat.com/t/drivers-for-zigbee-sinope-devices/91960"
@@ -1838,24 +1847,6 @@
     },
     {
       "manufacturer": "Sinope Technologies",
-      "model": "RM3500ZB",
-      "device_type": "Zigbee Driver for Sinope device",
-      "suggested_driver": "Water heater controller RM3500ZB with energy meter",
-      "author": "Samuel C. Auclair",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/drivers-for-zigbee-sinope-devices/91960"
-    },
-    {
-      "manufacturer": "Sinope Technologies",
-      "model": "TH1300ZB",
-      "device_type": "Zigbee Driver for Sinope device",
-      "suggested_driver": "Thermostat TH1300ZB with energy meter",
-      "author": "Samuel C. Auclair",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/drivers-for-zigbee-sinope-devices/91960"
-    },
-    {
-      "manufacturer": "Sinope Technologies",
       "model": "SP2600ZB",
       "device_type": "Zigbee Driver for Sinope device",
       "suggested_driver": "Switch SP2600ZB with energy meter",
@@ -1865,9 +1856,18 @@
     },
     {
       "manufacturer": "Sinope Technologies",
-      "model": "RM3250ZB",
+      "model": "TH1400ZB",
       "device_type": "Zigbee Driver for Sinope device",
-      "suggested_driver": "Load Controller RM3250ZB with energy meter",
+      "suggested_driver": "Thermostat TH1400ZB",
+      "author": "Samuel C. Auclair",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/drivers-for-zigbee-sinope-devices/91960"
+    },
+    {
+      "manufacturer": "Sinope Technologies",
+      "model": "TH1300ZB",
+      "device_type": "Zigbee Driver for Sinope device",
+      "suggested_driver": "Thermostat TH1300ZB with energy meter",
       "author": "Samuel C. Auclair",
       "hpm_available": true,
       "url": "https://community.hubitat.com/t/drivers-for-zigbee-sinope-devices/91960"
@@ -3853,6 +3853,24 @@
       "url": ""
     },
     {
+      "manufacturer": "HEIMAN",
+      "model": "COSensor-EM",
+      "device_type": "Heiman Zigbee CO Detector Driver",
+      "suggested_driver": "Heiman Zigbee CO Detector",
+      "author": "Scruffy-SJB",
+      "hpm_available": true,
+      "url": ""
+    },
+    {
+      "manufacturer": "HEIMAN",
+      "model": "COSensor-EF-3.0",
+      "device_type": "Heiman Zigbee CO Detector Driver",
+      "suggested_driver": "Heiman Zigbee CO Detector",
+      "author": "Scruffy-SJB",
+      "hpm_available": true,
+      "url": ""
+    },
+    {
       "manufacturer": "_TZE200_qq9mpfhw",
       "model": "TS0601",
       "device_type": "Tuya NEO Coolcam Zigbee Water Leak Sensor",
@@ -4112,24 +4130,6 @@
       "author": "Krassimir Kossev",
       "hpm_available": true,
       "url": "https://community.hubitat.com/t/beta-tuya-neo-coolcam-zigbee-water-leak-sensor/91370"
-    },
-    {
-      "manufacturer": "HEIMAN",
-      "model": "COSensor-EM",
-      "device_type": "Heiman Zigbee CO Detector Driver",
-      "suggested_driver": "Heiman Zigbee CO Detector",
-      "author": "Scruffy-SJB",
-      "hpm_available": true,
-      "url": ""
-    },
-    {
-      "manufacturer": "HEIMAN",
-      "model": "COSensor-EF-3.0",
-      "device_type": "Heiman Zigbee CO Detector Driver",
-      "suggested_driver": "Heiman Zigbee CO Detector",
-      "author": "Scruffy-SJB",
-      "hpm_available": true,
-      "url": ""
     },
     {
       "manufacturer": "_TZE200_lve3dvpy",
@@ -8939,204 +8939,6 @@
     },
     {
       "manufacturer": "IKEA of Sweden",
-      "model": "VALLHORN Wireless Motion Sensor",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA Vallhorn Motion Sensor (E2134)",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "PARASOLL Door/Window Sensor",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA Parasoll Door/Window Sensor (E2013)",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "STARKVIND Air purifier table",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA Starkvind Air Purifier (E2006)",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "BADRING Water Leakage Sensor",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA Badring Water Leakage Sensor (E2202)",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "TRADFRI motion sensor",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA Tradfri Motion Sensor (E1745)",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "TRETAKT Smart plug",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA Tretakt Smart Plug (E2204)",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "SOMRIG shortcut button",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA Somrig Shortcut Button (E2213)",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "TRADFRI bulb GU10 WS 345lm",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA White Spectrum Light",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "TRADFRI bulb E14 WS globe 470lm",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA White Spectrum Light",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "TRADFRIbulbE14WScandleopal470lm",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA White Spectrum Light",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "TRADFRIbulbE14WSglobeopal470lm",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA White Spectrum Light",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "TRADFRIbulbE27WSglobeopal1055lm",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA White Spectrum Light",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "TRADFRIbulbGU10WS345lm",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA White Spectrum Light",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "TRADFRI bulb E27 WS globe 1055lm",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA White Spectrum Light",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "TRADFRI bulb E14 WS 470lm",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA White Spectrum Light",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "SYMFONISK sound remote gen2",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA Symfonisk Sound Remote Gen2 (E2123)",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "TRADFRI bulb E14 CWS opal 600lm",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA RGB-Only Light",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "TRADFRI bulb E27 CWS 806lm",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA Color White Spectrum Light",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "TRADFRI bulb GU10 CWS 345lm",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA Color White Spectrum Light",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "TRADFRI bulb E14 CWS 470lm",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA Color White Spectrum Light",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "ORMANAS LED Strip",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA Color White Spectrum Light",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
-      "model": "TRADFRI bulb E14 CWS globe 806lm",
-      "device_type": "IKEA Zigbee drivers",
-      "suggested_driver": "IKEA Color White Spectrum Light",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
-    },
-    {
-      "manufacturer": "IKEA of Sweden",
       "model": "TRADFRI bulb E27 WW globe 806lm",
       "device_type": "IKEA Zigbee drivers",
       "suggested_driver": "IKEA Dimmable Light",
@@ -9236,12 +9038,219 @@
     },
     {
       "manufacturer": "IKEA of Sweden",
+      "model": "SYMFONISK sound remote gen2",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA Symfonisk Sound Remote Gen2 (E2123)",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "SOMRIG shortcut button",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA Somrig Shortcut Button (E2213)",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "TRETAKT Smart plug",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA Tretakt Smart Plug (E2204)",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "BADRING Water Leakage Sensor",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA Badring Water Leakage Sensor (E2202)",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "TRADFRI bulb E14 CWS opal 600lm",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA RGB-Only Light",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "TRADFRI motion sensor",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA Tradfri Motion Sensor (E1745)",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "PARASOLL Door/Window Sensor",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA Parasoll Door/Window Sensor (E2013)",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "STARKVIND Air purifier table",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA Starkvind Air Purifier (E2006)",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
       "model": "INSPELNING Smart plug",
       "device_type": "IKEA Zigbee drivers",
       "suggested_driver": "IKEA Inspelning Smart Plug (E2206)",
       "author": "Dan Danache (@dandanache)",
       "hpm_available": true,
       "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "VALLHORN Wireless Motion Sensor",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA Vallhorn Motion Sensor (E2134)",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "TRADFRI bulb GU10 WS 345lm",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA White Spectrum Light",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "TRADFRI bulb E14 WS globe 470lm",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA White Spectrum Light",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "TRADFRIbulbE14WScandleopal470lm",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA White Spectrum Light",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "TRADFRIbulbE14WSglobeopal470lm",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA White Spectrum Light",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "TRADFRIbulbE27WSglobeopal1055lm",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA White Spectrum Light",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "TRADFRIbulbGU10WS345lm",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA White Spectrum Light",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "TRADFRI bulb E27 WS globe 1055lm",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA White Spectrum Light",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "TRADFRI bulb E14 WS 470lm",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA White Spectrum Light",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "TRADFRI bulb E27 CWS 806lm",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA Color White Spectrum Light",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "TRADFRI bulb GU10 CWS 345lm",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA Color White Spectrum Light",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "TRADFRI bulb E14 CWS 470lm",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA Color White Spectrum Light",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "ORMANAS LED Strip",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA Color White Spectrum Light",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "IKEA of Sweden",
+      "model": "TRADFRI bulb E14 CWS globe 806lm",
+      "device_type": "IKEA Zigbee drivers",
+      "suggested_driver": "IKEA Color White Spectrum Light",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-ikea-zigbee-drivers/123853"
+    },
+    {
+      "manufacturer": "NodOn",
+      "model": "SIN-4-RS-20",
+      "device_type": "Hubitat drivers for NodOn smart devices",
+      "suggested_driver": "NodOn Roller Shutter Relay Switch (SIN-4-RS-20)",
+      "author": "Dan Danache (@dandanache)",
+      "hpm_available": true,
+      "url": "https://community.hubitat.com/t/release-nodon-zigbee-drivers/141365"
     },
     {
       "manufacturer": "NodOn",
@@ -9266,15 +9275,6 @@
       "model": "SIN-4-1-20",
       "device_type": "Hubitat drivers for NodOn smart devices",
       "suggested_driver": "NodOn Multifunction Relay Switch (SIN-4-1-20)",
-      "author": "Dan Danache (@dandanache)",
-      "hpm_available": true,
-      "url": "https://community.hubitat.com/t/release-nodon-zigbee-drivers/141365"
-    },
-    {
-      "manufacturer": "NodOn",
-      "model": "SIN-4-RS-20",
-      "device_type": "Hubitat drivers for NodOn smart devices",
-      "suggested_driver": "NodOn Roller Shutter Relay Switch (SIN-4-RS-20)",
       "author": "Dan Danache (@dandanache)",
       "hpm_available": true,
       "url": "https://community.hubitat.com/t/release-nodon-zigbee-drivers/141365"

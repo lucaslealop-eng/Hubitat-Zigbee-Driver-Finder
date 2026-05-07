@@ -2,12 +2,12 @@ name: Update Zigbee Database
 
 on:
   schedule:
-    # Roda toda segunda-feira à 01:00 UTC
+    # Runs every Monday at 01:00 UTC.
     - cron: '0 1 * * 1'
-  workflow_dispatch: # Permite rodar o workflow manualmente pela interface do GitHub
+  workflow_dispatch: # Allows manual execution from GitHub.
 
 permissions:
-  contents: write # Necessário para o bot fazer o commit
+  contents: write # Required for the bot commit.
 
 jobs:
   scrape-and-update:
@@ -28,11 +28,17 @@ jobs:
     - name: Run Scraper
       run: npm run scrape
 
+    - name: Import Company Sheet
+      run: npm run import-company-sheet
+
+    - name: Validate Database
+      run: npm run validate-db
+
     - name: Commit Changes
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
-        commit_message: "Auto-update: Banco de dados HPM sincronizado"
-        file_pattern: "data/db_hpm_scraped.json"
+        commit_message: "Auto-update: bancos HPM e planilha da empresa sincronizados"
+        file_pattern: "data/db_hpm_scraped.json data/db_company_devices.json"
         commit_user_name: "github-actions[bot]"
         commit_user_email: "41898282+github-actions[bot]@users.noreply.github.com"
         commit_author: "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"

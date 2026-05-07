@@ -1,6 +1,6 @@
 /**
  * ========================================================
- *  Hubitat Zigbee Driver Finder v3.0.0
+ *  Hubitat Zigbee Driver Finder v2.0.0
  * ========================================================
  *  SmartApp para Hubitat Elevation
  *
@@ -9,7 +9,7 @@
  *  e clusters reportados.
  *
  *  Autor: Lucas (Hubitat Agent Project)
- *  Versão: 3.0.0
+ *  Versão: 2.0.0
  *  Data: 2026-05-05
  *
  *  Funcionalidades:
@@ -46,9 +46,9 @@ preferences {
 
 // ─── Constantes ────────────────────────────────────────
 @Field static String DB_BASE_URL = "https://raw.githubusercontent.com/lucaslealop-eng/Hubitat-Zigbee-Driver-Finder/main/data/"
-@Field static List DB_FILES = ["db_tuya.json", "db_xiaomi_aqara.json", "db_brands.json", "db_other_brands.json", "db_misc_zigbee.json", "db_hpm_scraped.json"]
+@Field static List DB_FILES = ["db_company_devices.json", "db_tuya.json", "db_xiaomi_aqara.json", "db_brands.json", "db_other_brands.json", "db_misc_zigbee.json", "db_hpm_scraped.json"]
 @Field static String DB_INDEX_URL = "https://raw.githubusercontent.com/lucaslealop-eng/Hubitat-Zigbee-Driver-Finder/main/data/zigbee_driver_db.json"
-@Field static String APP_VERSION = "3.0.0"
+@Field static String APP_VERSION = "2.0.0"
 
 // ─── Cache Estático (JVM memory, não state) ────────────
 @Field static Map cachedDb = null
@@ -84,6 +84,7 @@ def mainPage() {
             }
             section("") {
                 paragraph getCacheStatusText()
+                paragraph getCacheHelpText()
                 input name: "hubDevices", type: "capability.*", title: "⚙️ Alterar dispositivos selecionados", required: false, multiple: true, submitOnChange: true
             }
         }
@@ -257,7 +258,12 @@ def fetchRemoteDatabase() {
             try {
                 httpGet([uri: DB_BASE_URL + fileName, contentType: "application/json", timeout: 10]) { resp ->
                     if (resp.status == 200 && resp.data?.devices) {
-                        allDevices.addAll(resp.data.devices)
+                        resp.data.devices.each { device ->
+                            def enriched = [:] + device
+                            enriched._sourceFile = fileName
+                            enriched._sourcePriority = getSourcePriority(fileName)
+                            allDevices << enriched
+                        }
                     }
                 }
             } catch (e) { log.warn "Falha ao carregar ${fileName}: ${e.message}" }
@@ -279,6 +285,23 @@ def getCacheStatusText() {
     def hours = Math.round(remaining / 3600000)
     def mins = Math.round((remaining % 3600000) / 60000)
     return "<span style='color:#2ecc71;'>✅ Ativo — expira em ${hours}h ${mins}m</span>"
+}
+
+def getCacheHelpText() {
+    return "<span style='color:#aaa;font-size:12px;'>O contador de 24h mostra por quanto tempo o app vai reutilizar a lista de drivers que ja baixou. Quando o tempo acabar, ele baixa uma lista atualizada na proxima consulta. Isso evita downloads repetidos e deixa o app mais rapido.</span>"
+}
+
+def getSourcePriority(String fileName) {
+    switch(fileName) {
+        case "db_company_devices.json": return 1
+        case "db_tuya.json": return 10
+        case "db_xiaomi_aqara.json": return 20
+        case "db_brands.json": return 30
+        case "db_other_brands.json": return 40
+        case "db_misc_zigbee.json": return 50
+        case "db_hpm_scraped.json": return 100
+        default: return 999
+    }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -317,31 +340,33 @@ def findBestMatch(Map db, Map devData) {
     if (!db || !db.devices) return [type: "none", confidence: 0, data: null, matches: [], rules: []]
 
     // 1. Match exato
-    def exact = db.devices.find { e ->
+    def exactMatches = db.devices.findAll { e ->
         e.manufacturer?.toLowerCase() == devData.manufacturer?.toLowerCase() &&
         e.model?.toLowerCase() == devData.model?.toLowerCase()
-    }
+    }.sort { a, b -> (a._sourcePriority ?: 999) <=> (b._sourcePriority ?: 999) }
+    def exact = exactMatches ? exactMatches[0] : null
     if (exact) return [type: "exact", confidence: 3, data: exact, matches: [], rules: []]
 
     // 2. Match parcial (mesmo fabricante)
     def partial = db.devices.findAll { e ->
         e.manufacturer?.toLowerCase() == devData.manufacturer?.toLowerCase()
-    }
+    }.sort { a, b -> (a._sourcePriority ?: 999) <=> (b._sourcePriority ?: 999) }
     if (partial && partial.size() > 0) {
         return [type: "partial", confidence: 2, data: partial[0], matches: partial.take(5), rules: []]
     }
 
     // 3. Fallback por prefixo do fabricante
     if (db.fallback_rules) {
-        def prefix = db.fallback_rules.find { r ->
-            r.condition == "manufacturer_prefix" && devData.manufacturer?.startsWith(r.match)
-        }
+        def prefix = db.fallback_rules
+            .findAll { r -> r.condition == "manufacturer_prefix" && devData.manufacturer?.toLowerCase()?.startsWith(r.match?.toLowerCase()) }
+            .sort { a, b -> (b.match?.size() ?: 0) <=> (a.match?.size() ?: 0) }
+            .with { it ? it[0] : null }
         if (prefix) return [type: "prefix", confidence: 1, data: prefix, matches: [], rules: []]
     }
 
     // 4. Fallback por clusters
     if (db.fallback_rules && devData.inClusters) {
-        def clusters = devData.inClusters.replaceAll("\\s", "").split(",")
+        def clusters = normalizeClusters("${devData.inClusters},${devData.outClusters}")
         def clusterRules = []
         db.fallback_rules.findAll { it.condition == "cluster_present" }.each { rule ->
             if (clusters.any { c -> c.equalsIgnoreCase(rule.match) }) { clusterRules << rule }
@@ -352,6 +377,17 @@ def findBestMatch(Map db, Map devData) {
     }
 
     return [type: "none", confidence: 0, data: null, matches: [], rules: []]
+}
+
+def normalizeClusters(String rawClusters) {
+    if (!rawClusters) return []
+    return rawClusters
+        .replaceAll("[\\[\\]]", "")
+        .replaceAll("\\s", "")
+        .split(",")
+        .collect { it.replaceFirst("(?i)^0x", "").toUpperCase() }
+        .findAll { it }
+        .collect { it.padLeft(4, "0") }
 }
 
 def isDriverOptimal(String currentDriver, Map matchResult) {
@@ -370,18 +406,27 @@ def getConfidenceStars(int confidence) {
     }
 }
 
+def htmlEscape(value) {
+    return "${value ?: ''}"
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\"", "&quot;")
+        .replace("'", "&#39;")
+}
+
 // ═══════════════════════════════════════════════════════
 //  FORMATAÇÃO HTML
 // ═══════════════════════════════════════════════════════
 
 def formatDeviceInfo(Map d) {
     return "<table style='width:100%;border-collapse:collapse;font-family:monospace;font-size:14px;'>" +
-        "<tr style='background:#1a1a2e;color:#e94560;'><td style='padding:8px;border:1px solid #333;'><b>Nome</b></td><td style='padding:8px;border:1px solid #333;'>${d.deviceName}</td></tr>" +
-        "<tr style='background:#16213e;color:#eee;'><td style='padding:8px;border:1px solid #333;'><b>Manufacturer</b></td><td style='padding:8px;border:1px solid #333;'>${d.manufacturer}</td></tr>" +
-        "<tr style='background:#1a1a2e;color:#eee;'><td style='padding:8px;border:1px solid #333;'><b>Model</b></td><td style='padding:8px;border:1px solid #333;'>${d.model}</td></tr>" +
-        "<tr style='background:#16213e;color:#eee;'><td style='padding:8px;border:1px solid #333;'><b>In Clusters</b></td><td style='padding:8px;border:1px solid #333;'>${d.inClusters}</td></tr>" +
-        "<tr style='background:#1a1a2e;color:#eee;'><td style='padding:8px;border:1px solid #333;'><b>Out Clusters</b></td><td style='padding:8px;border:1px solid #333;'>${d.outClusters}</td></tr>" +
-        "<tr style='background:#16213e;color:#e94560;'><td style='padding:8px;border:1px solid #333;'><b>Driver Atual</b></td><td style='padding:8px;border:1px solid #333;'>${d.currentDriver}</td></tr>" +
+        "<tr style='background:#1a1a2e;color:#e94560;'><td style='padding:8px;border:1px solid #333;'><b>Nome</b></td><td style='padding:8px;border:1px solid #333;'>${htmlEscape(d.deviceName)}</td></tr>" +
+        "<tr style='background:#16213e;color:#eee;'><td style='padding:8px;border:1px solid #333;'><b>Manufacturer</b></td><td style='padding:8px;border:1px solid #333;'>${htmlEscape(d.manufacturer)}</td></tr>" +
+        "<tr style='background:#1a1a2e;color:#eee;'><td style='padding:8px;border:1px solid #333;'><b>Model</b></td><td style='padding:8px;border:1px solid #333;'>${htmlEscape(d.model)}</td></tr>" +
+        "<tr style='background:#16213e;color:#eee;'><td style='padding:8px;border:1px solid #333;'><b>In Clusters</b></td><td style='padding:8px;border:1px solid #333;'>${htmlEscape(d.inClusters)}</td></tr>" +
+        "<tr style='background:#1a1a2e;color:#eee;'><td style='padding:8px;border:1px solid #333;'><b>Out Clusters</b></td><td style='padding:8px;border:1px solid #333;'>${htmlEscape(d.outClusters)}</td></tr>" +
+        "<tr style='background:#16213e;color:#e94560;'><td style='padding:8px;border:1px solid #333;'><b>Driver Atual</b></td><td style='padding:8px;border:1px solid #333;'>${htmlEscape(d.currentDriver)}</td></tr>" +
         "</table>"
 }
 
@@ -392,6 +437,9 @@ def formatMatchResult(Map result, Map devData) {
     switch(result.type) {
         case "exact":
             def m = result.data
+            def driverName = htmlEscape(m.suggested_driver)
+            def deviceType = htmlEscape(m.device_type)
+            def author = htmlEscape(m.author)
             def hpmBadge = m.hpm_available ?
                 "<span style='background:#27ae60;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;'>✅ HPM</span>" :
                 "<span style='background:#2980b9;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;'>📦 Built-in</span>"
@@ -399,38 +447,38 @@ def formatMatchResult(Map result, Map devData) {
                 "<div style='background:#0a3d0a;border:1px solid #2ecc71;border-radius:8px;padding:8px;margin-top:8px;'><b style='color:#2ecc71;'>✅ Você já está usando o driver ideal!</b></div>" : ""
             return "<div style='background:#0a3d0a;border:2px solid #27ae60;border-radius:12px;padding:16px;font-family:sans-serif;'>" +
                 "<h3 style='color:#2ecc71;margin:0 0 8px 0;'>✅ Driver Encontrado! ${stars}</h3>" +
-                "<p style='color:#eee;font-size:16px;margin:4px 0;'><b>Driver Recomendado:</b> ${m.suggested_driver}</p>" +
-                "<p style='color:#bbb;font-size:14px;margin:4px 0;'><b>Tipo:</b> ${m.device_type} | <b>Autor:</b> ${m.author}</p>" +
+                "<p style='color:#eee;font-size:16px;margin:4px 0;'><b>Driver Recomendado:</b> ${driverName}</p>" +
+                "<p style='color:#bbb;font-size:14px;margin:4px 0;'><b>Tipo:</b> ${deviceType} | <b>Autor:</b> ${author}</p>" +
                 "<p style='margin:8px 0;'>${hpmBadge}</p>${optBadge}</div>"
 
         case "partial":
-            def list = result.matches.collect { m -> "<li style='color:#eee;'><b>${m.model}</b> → ${m.suggested_driver} (${m.author})</li>" }.join("")
+            def list = result.matches.collect { m -> "<li style='color:#eee;'><b>${htmlEscape(m.model)}</b> → ${htmlEscape(m.suggested_driver)} (${htmlEscape(m.author)})</li>" }.join("")
             return "<div style='background:#3d3a0a;border:2px solid #f39c12;border-radius:12px;padding:16px;font-family:sans-serif;'>" +
                 "<h3 style='color:#f1c40f;margin:0 0 8px 0;'>⚠️ Match Parcial ${stars}</h3>" +
-                "<p style='color:#eee;'>Modelo <b>${devData.model}</b> não encontrado, mas há drivers do mesmo fabricante (<b>${devData.manufacturer}</b>):</p>" +
+                "<p style='color:#eee;'>Modelo <b>${htmlEscape(devData.model)}</b> não encontrado, mas há drivers do mesmo fabricante (<b>${htmlEscape(devData.manufacturer)}</b>):</p>" +
                 "<ul style='margin:8px 0;'>${list}</ul></div>"
 
         case "prefix":
             def r = result.data
-            def link = r.url ? "<br/><a href='${r.url}' target='_blank' style='color:#3498db;'>🔗 Ver Referência</a>" : ""
+            def link = r.url ? "<br/><a href='${htmlEscape(r.url)}' target='_blank' style='color:#3498db;'>🔗 Ver Referência</a>" : ""
             return "<div style='background:#3d2a0a;border:2px solid #e67e22;border-radius:12px;padding:16px;font-family:sans-serif;'>" +
                 "<h3 style='color:#e67e22;margin:0 0 8px 0;'>⚠️ Recomendação por Fabricante ${stars}</h3>" +
-                "<p style='color:#eee;font-size:14px;'>${r.message}</p>${link}</div>"
+                "<p style='color:#eee;font-size:14px;'>${htmlEscape(r.message)}</p>${link}</div>"
 
         case "cluster":
             def rList = result.rules.collect { r ->
-                def dt = r.suggested_driver ? " → <b>${r.suggested_driver}</b>" : ""
-                "<li style='color:#eee;'>${r.message}${dt}</li>"
+                def dt = r.suggested_driver ? " → <b>${htmlEscape(r.suggested_driver)}</b>" : ""
+                "<li style='color:#eee;'>${htmlEscape(r.message)}${dt}</li>"
             }.join("")
             return "<div style='background:#0a2a3d;border:2px solid #2980b9;border-radius:12px;padding:16px;font-family:sans-serif;'>" +
                 "<h3 style='color:#3498db;margin:0 0 8px 0;'>🔎 Análise por Clusters ${stars}</h3>" +
-                "<p style='color:#bbb;'>Dispositivo <b>${devData.manufacturer} / ${devData.model}</b> não no banco. Sugestões baseadas nos clusters:</p>" +
+                "<p style='color:#bbb;'>Dispositivo <b>${htmlEscape(devData.manufacturer)} / ${htmlEscape(devData.model)}</b> não no banco. Sugestões baseadas nos clusters:</p>" +
                 "<ul style='margin:8px 0;'>${rList}</ul></div>"
 
         default:
             return "<div style='background:#3d0a0a;border:2px solid #c0392b;border-radius:12px;padding:16px;font-family:sans-serif;'>" +
                 "<h3 style='color:#e74c3c;margin:0 0 8px 0;'>❌ Dispositivo Não Reconhecido</h3>" +
-                "<p style='color:#eee;'>Sem recomendação para: <b>${devData.manufacturer} / ${devData.model}</b></p>" +
+                "<p style='color:#eee;'>Sem recomendação para: <b>${htmlEscape(devData.manufacturer)} / ${htmlEscape(devData.model)}</b></p>" +
                 "<p style='color:#bbb;font-size:13px;'>Procure no <a href='https://community.hubitat.com/' target='_blank' style='color:#3498db;'>Fórum</a> ou no HPM.</p></div>"
     }
 }
@@ -441,15 +489,15 @@ def formatScanAllTable(List results) {
         def d = r.devData
         def m = r.match
         def opt = r.optimal
-        def suggested = m.data?.suggested_driver ?: (m.rules?.size() > 0 ? m.rules[0].suggested_driver ?: "Ver clusters" : "—")
+        def suggested = htmlEscape(m.data?.suggested_driver ?: (m.rules?.size() > 0 ? m.rules[0].suggested_driver ?: "Ver clusters" : "—"))
         def bgColor = m.confidence == 0 ? "#3d0a0a" : (opt ? "#0a3d0a" : "#3d3a0a")
         def statusIcon = m.confidence == 0 ? "🔴" : (opt ? "✅" : "🟡")
         def stars = getConfidenceStars(m.confidence)
         rows += "<tr style='background:${bgColor};'>" +
-            "<td style='padding:6px 8px;border:1px solid #333;color:#eee;'>${d.deviceName}</td>" +
-            "<td style='padding:6px 8px;border:1px solid #333;color:#bbb;'>${d.manufacturer}</td>" +
-            "<td style='padding:6px 8px;border:1px solid #333;color:#bbb;'>${d.model}</td>" +
-            "<td style='padding:6px 8px;border:1px solid #333;color:#888;'>${d.currentDriver}</td>" +
+            "<td style='padding:6px 8px;border:1px solid #333;color:#eee;'>${htmlEscape(d.deviceName)}</td>" +
+            "<td style='padding:6px 8px;border:1px solid #333;color:#bbb;'>${htmlEscape(d.manufacturer)}</td>" +
+            "<td style='padding:6px 8px;border:1px solid #333;color:#bbb;'>${htmlEscape(d.model)}</td>" +
+            "<td style='padding:6px 8px;border:1px solid #333;color:#888;'>${htmlEscape(d.currentDriver)}</td>" +
             "<td style='padding:6px 8px;border:1px solid #333;color:#eee;'><b>${suggested}</b></td>" +
             "<td style='padding:6px 8px;border:1px solid #333;text-align:center;'>${stars}</td>" +
             "<td style='padding:6px 8px;border:1px solid #333;text-align:center;'>${statusIcon}</td>" +
@@ -470,7 +518,7 @@ def formatScanAllTable(List results) {
 def formatError(String msg) {
     return "<div style='background:#3d0a0a;border:2px solid #e74c3c;border-radius:12px;padding:16px;font-family:sans-serif;'>" +
         "<h3 style='color:#e74c3c;margin:0 0 8px 0;'>⚠️ Erro</h3>" +
-        "<p style='color:#eee;'>${msg}</p></div>"
+        "<p style='color:#eee;'>${htmlEscape(msg)}</p></div>"
 }
 
 // ═══════════════════════════════════════════════════════

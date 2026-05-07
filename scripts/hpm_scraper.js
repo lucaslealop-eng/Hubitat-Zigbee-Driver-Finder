@@ -1,16 +1,24 @@
 const fs = require('fs');
 
 async function fetchWithTimeout(url, options = {}) {
-    const timeout = 10000;
+    const timeout = options.timeout || 10000;
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeout);
-    const response = await fetch(url, { ...options, signal: controller.signal });
-    clearTimeout(id);
-    return response;
+    try {
+        return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+        clearTimeout(id);
+    }
 }
 
 async function scrape() {
     console.log("Fetching master repository...");
+    const stats = {
+        repositoriesFailed: 0,
+        manifestsFailed: 0,
+        driversFailed: 0,
+        emptyDriverNames: 0
+    };
     let masterJson;
     try {
         const masterRes = await fetchWithTimeout("https://raw.githubusercontent.com/HubitatCommunity/hubitat-packagerepositories/master/repositories.json");
@@ -33,7 +41,10 @@ async function scrape() {
             if (!repoUrl) return;
             try {
                 const repoRes = await fetchWithTimeout(repoUrl);
-                if (repoRes.status !== 200) return;
+                if (repoRes.status !== 200) {
+                    stats.repositoriesFailed++;
+                    return;
+                }
                 const repoJson = await repoRes.json();
                 
                 const packages = repoJson.packages || [];
@@ -43,7 +54,10 @@ async function scrape() {
                     
                     try {
                         const manifestRes = await fetchWithTimeout(manifestUrl);
-                        if (manifestRes.status !== 200) continue;
+                        if (manifestRes.status !== 200) {
+                            stats.manifestsFailed++;
+                            continue;
+                        }
                         const manifestJson = await manifestRes.json();
                         
                         const drivers = manifestJson.drivers || [];
@@ -52,7 +66,10 @@ async function scrape() {
                             if (!codeUrl) return;
                             try {
                                 const codeRes = await fetchWithTimeout(codeUrl);
-                                if (codeRes.status !== 200) return;
+                                if (codeRes.status !== 200) {
+                                    stats.driversFailed++;
+                                    return;
+                                }
                                 const code = await codeRes.text();
                                 
                                 if (!code.includes('fingerprint')) return;
@@ -64,6 +81,10 @@ async function scrape() {
                                         const modMatch = line.match(/model:\s*["']([^"']+)["']/);
                                         
                                         if (manMatch && modMatch) {
+                                            if (!driver.name) {
+                                                stats.emptyDriverNames++;
+                                                return;
+                                            }
                                             const device = {
                                                 manufacturer: manMatch[1],
                                                 model: modMatch[1],
@@ -80,20 +101,33 @@ async function scrape() {
                                         }
                                     }
                                 }
-                            } catch (e) {}
+                            } catch (e) {
+                                stats.driversFailed++;
+                            }
                         }));
-                    } catch (e) {}
+                    } catch (e) {
+                        stats.manifestsFailed++;
+                    }
                 }
-            } catch (e) {}
+            } catch (e) {
+                stats.repositoriesFailed++;
+            }
         }));
         console.log(`Processed batch ${Math.floor(i/chunk_size) + 1}/${Math.ceil(repoUrls.length/chunk_size)}... Total found so far: ${allDevices.length}`);
     }
     
     // Configurado com caminho relativo para funcionar tanto no GitHub Actions quanto localmente
     const outputPath = './data/db_hpm_scraped.json';
+    if (allDevices.length < 500) {
+        console.error(`Aborting: only ${allDevices.length} devices were scraped. This is probably a network or upstream parsing problem.`);
+        process.exitCode = 1;
+        return;
+    }
+
     fs.writeFileSync(outputPath, JSON.stringify({ devices: allDevices }, null, 2));
     console.log(`\n========================================`);
     console.log(`Done! Scraped ${allDevices.length} devices. Saved to ${outputPath}`);
+    console.log(`Failures: repositories=${stats.repositoriesFailed}, manifests=${stats.manifestsFailed}, drivers=${stats.driversFailed}, emptyDriverNames=${stats.emptyDriverNames}`);
 }
 
 scrape();
