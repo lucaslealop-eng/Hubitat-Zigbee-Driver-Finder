@@ -57,9 +57,9 @@ preferences {
 }
 
 // ─── Constantes ────────────────────────────────────────
-@Field static String DB_BASE_URL = "https://raw.githubusercontent.com/lucaslealop-eng/Hubitat-Zigbee-Driver-Finder/main/data/"
+@Field static String DB_BASE_URL = "https://raw.githubusercontent.com/lucaslealop-eng/Hubitat-Driver-Finder-Data/main/"
 @Field static List DB_FILES = ["db_overrides.json", "db_company_devices.json", "db_zwave_devices.json", "db_zwave_hpm_scraped.json", "db_tuya.json", "db_xiaomi_aqara.json", "db_brands.json", "db_other_brands.json", "db_misc_zigbee.json", "db_hpm_scraped.json", "db_zigbee2mqtt_devices.json", "db_zwavejs_devices.json"]
-@Field static String DB_INDEX_URL = "https://raw.githubusercontent.com/lucaslealop-eng/Hubitat-Zigbee-Driver-Finder/main/data/zigbee_driver_db.json"
+@Field static String DB_INDEX_URL = "https://raw.githubusercontent.com/lucaslealop-eng/Hubitat-Driver-Finder-Data/main/zigbee_driver_db.json"
 @Field static String APP_VERSION = "2.5.0"
 
 // ─── Cache Estático (JVM memory, não state) ────────────

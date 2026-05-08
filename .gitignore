@@ -1,0 +1,7 @@
+# Data files are served from the separate public repo:
+# https://github.com/lucaslealop-eng/Hubitat-Driver-Finder-Data
+# They are generated locally by CI/CD and synced to the data repo.
+data/
+
+# Node
+node_modules/

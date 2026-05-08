@@ -1,4 +1,4 @@
-name: Update Zigbee Database
+name: Update Device Database
 
 on:
   schedule:
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
+    - name: Checkout Main Repository
       uses: actions/checkout@v4
 
     - name: Setup Node.js
@@ -40,7 +40,30 @@ jobs:
     - name: Validate Database
       run: npm run validate-db
 
-    - name: Commit Changes
+    - name: Sync to Data Repository
+      env:
+        DATA_REPO_TOKEN: ${{ secrets.DATA_REPO_TOKEN }}
+      run: |
+        # Clone the data repo
+        git clone https://x-access-token:${DATA_REPO_TOKEN}@github.com/lucaslealop-eng/Hubitat-Driver-Finder-Data.git /tmp/data-repo
+
+        # Copy updated data files
+        cp data/*.json /tmp/data-repo/
+
+        # Commit and push if there are changes
+        cd /tmp/data-repo
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add -A
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Auto-update: bancos HPM e fontes publicas sincronizados"
+          git push
+          echo "Data repo updated successfully"
+        fi
+
+    - name: Commit Local Changes
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
         commit_message: "Auto-update: bancos HPM e planilha da empresa sincronizados"
