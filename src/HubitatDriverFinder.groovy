@@ -2,6 +2,13 @@
  * ========================================================
  *  Hubitat Driver Finder v2.5.0
  * ========================================================
+ *  Copyright (c) 2026 Lucas (Hubitat Agent Project)
+ *  All rights reserved.
+ *
+ *  This software is proprietary. Unauthorized copying,
+ *  modification, distribution, or commercial use is
+ *  strictly prohibited. See LICENSE file for details.
+ * ========================================================
  *  SmartApp para Hubitat Elevation
  *
  *  Identifica dispositivos Zigbee e Z-Wave no hub e recomenda o
@@ -14,7 +21,7 @@
  *
  *  Funcionalidades:
  *   - Pesquisa individual de dispositivo
- *   - Scan completo de todos os Zigbee do hub
+ *   - Scan completo de todos os Zigbee e Z-Wave do hub
  *   - Cache local do banco de dados (24h TTL)
  *   - Comparação driver atual vs. recomendado
  *   - Ranking de confiança (⭐⭐⭐ / ⭐⭐ / ⭐)

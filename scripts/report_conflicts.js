@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 Lucas (Hubitat Agent Project). All rights reserved.
+ * This software is proprietary. See LICENSE file for details.
+ */
+
 const fs = require('fs');
 const path = require('path');
 

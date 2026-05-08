@@ -116,4 +116,8 @@ O app pode retornar diferentes tipos de match:
 
 ## Licença
 
-MIT License.
+Copyright © 2026 Lucas (Hubitat Agent Project). Todos os direitos reservados.
+
+Este software é **proprietário**. Uso pessoal e não-comercial é permitido. Cópia, redistribuição, modificação para fins comerciais ou uso em produtos concorrentes são **proibidos** sem autorização prévia do autor.
+
+Consulte o arquivo [LICENSE](LICENSE) para os termos completos.

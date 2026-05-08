@@ -1,0 +1,76 @@
+Hubitat Driver Finder — Proprietary License
+
+Copyright (c) 2026 Lucas (Hubitat Agent Project). All rights reserved.
+
+TERMS AND CONDITIONS
+
+1. DEFINITIONS
+   "Software" refers to the Hubitat Driver Finder application, including all
+   source code, scripts, documentation, and associated database files.
+   "Author" refers to Lucas (Hubitat Agent Project), the original creator.
+   "User" refers to any individual or entity that obtains a copy of this Software.
+
+2. GRANT OF LICENSE
+   The Author grants the User a limited, non-exclusive, non-transferable,
+   revocable license to:
+   a) Use the Software for personal, non-commercial purposes on Hubitat
+      Elevation hubs owned by the User.
+   b) View the source code for educational and personal reference purposes.
+
+3. RESTRICTIONS
+   The User SHALL NOT, without prior written authorization from the Author:
+   a) Copy, reproduce, or distribute the Software or any substantial portion
+      of it, in original or modified form.
+   b) Use the Software, its code, or its database for any commercial purpose,
+      including but not limited to selling, licensing, sublicensing, or
+      offering it as part of a paid service.
+   c) Create derivative works based on the Software for public distribution.
+   d) Remove, alter, or obscure any copyright notices, author attributions,
+      or license information contained in the Software.
+   e) Reverse-engineer the database structure, scraping logic, or scoring
+      algorithms for use in competing products.
+   f) Claim authorship or ownership of the Software or any part thereof.
+
+4. DATABASE AND DATA FILES
+   The device database files (data/*.json) are proprietary datasets curated
+   by the Author. These datasets are protected independently from the
+   application code. Unauthorized copying, redistribution, or commercial
+   use of the database is strictly prohibited.
+
+5. ATTRIBUTION
+   Any permitted use must retain all original copyright notices and author
+   attribution. When referencing or discussing the Software publicly, the
+   User must credit the Author appropriately.
+
+6. CONTRIBUTIONS
+   If the User submits contributions (pull requests, issues, suggestions)
+   to the Software's repository, the User grants the Author a perpetual,
+   irrevocable, worldwide, royalty-free license to use, modify, and
+   incorporate those contributions into the Software.
+
+7. NO WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+8. LIMITATION OF LIABILITY
+   IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+   LIABILITY ARISING FROM THE USE OF THE SOFTWARE.
+
+9. TERMINATION
+   This license is automatically terminated if the User violates any of
+   the terms above. Upon termination, the User must destroy all copies
+   of the Software in their possession.
+
+10. FUTURE COMMERCIAL LICENSING
+    The Author reserves the right to offer commercial licenses, paid tiers,
+    or enterprise editions of the Software at any time. Contact the Author
+    for commercial licensing inquiries.
+
+11. GOVERNING LAW
+    This license shall be governed by the laws of the Federative Republic
+    of Brazil, in accordance with Law 9.609/98 (Software Law) and
+    Law 9.610/98 (Copyright Law).
+
+For commercial licensing, partnerships, or inquiries:
+GitHub: https://github.com/lucaslealop-eng
