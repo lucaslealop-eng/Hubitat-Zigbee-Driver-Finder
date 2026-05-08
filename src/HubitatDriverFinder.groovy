@@ -1,6 +1,6 @@
 /**
  * ========================================================
- *  Hubitat Driver Finder v2.4.0
+ *  Hubitat Driver Finder v2.5.0
  * ========================================================
  *  SmartApp para Hubitat Elevation
  *
@@ -9,8 +9,8 @@
  *  e clusters reportados.
  *
  *  Autor: Lucas (Hubitat Agent Project)
- *  Versão: 2.4.0
- *  Data: 2026-05-07
+ *  Versão: 2.5.0
+ *  Data: 2026-05-08
  *
  *  Funcionalidades:
  *   - Pesquisa individual de dispositivo
@@ -18,6 +18,9 @@
  *   - Cache local do banco de dados (24h TTL)
  *   - Comparação driver atual vs. recomendado
  *   - Ranking de confiança (⭐⭐⭐ / ⭐⭐ / ⭐)
+ *   - Classificação 4 estados: Ideal / Compatível / Sugestão / Não encontrado
+ *   - Alternativas completas com HPM badge e link
+ *   - Matching flexível de nomes de driver
  *   - Página de estatísticas
  *   - Indicação HPM disponível + link do driver/autor
  * ========================================================
@@ -50,7 +53,7 @@ preferences {
 @Field static String DB_BASE_URL = "https://raw.githubusercontent.com/lucaslealop-eng/Hubitat-Zigbee-Driver-Finder/main/data/"
 @Field static List DB_FILES = ["db_overrides.json", "db_company_devices.json", "db_zwave_devices.json", "db_zwave_hpm_scraped.json", "db_tuya.json", "db_xiaomi_aqara.json", "db_brands.json", "db_other_brands.json", "db_misc_zigbee.json", "db_hpm_scraped.json", "db_zigbee2mqtt_devices.json", "db_zwavejs_devices.json"]
 @Field static String DB_INDEX_URL = "https://raw.githubusercontent.com/lucaslealop-eng/Hubitat-Zigbee-Driver-Finder/main/data/zigbee_driver_db.json"
-@Field static String APP_VERSION = "2.4.0"
+@Field static String APP_VERSION = "2.5.0"
 
 // ─── Cache Estático (JVM memory, não state) ────────────
 @Field static Map cachedDb = null
@@ -163,24 +166,29 @@ def scanAllPage() {
         def db = getCachedDatabase()
         if (db) {
             def results = []
-            def optimal = 0
-            def improvable = 0
-            def unknown = 0
+            def cntIdeal = 0
+            def cntCompatible = 0
+            def cntSuggestion = 0
+            def cntUnknown = 0
             supportedDevs.each { dev ->
                 def devData = getDeviceData(dev)
                 def match = findBestMatch(db, devData)
-                def isOptimal = isDriverOptimal(devData.currentDriver, match)
-                if (match.confidence == 0) { unknown++ }
-                else if (isOptimal) { optimal++ }
-                else { improvable++ }
-                results << [devData: devData, match: match, optimal: isOptimal]
+                def status = getDriverStatus(devData.currentDriver, match)
+                switch(status) {
+                    case "ideal": cntIdeal++; break
+                    case "compatible": cntCompatible++; break
+                    case "suggestion": cntSuggestion++; break
+                    default: cntUnknown++; break
+                }
+                results << [devData: devData, match: match, status: status]
             }
-            state.lastScanStats = [total: results.size(), optimal: optimal, improvable: improvable, unknown: unknown, scanDate: now()]
+            state.lastScanStats = [total: results.size(), optimal: cntIdeal, compatible: cntCompatible, suggestion: cntSuggestion, unknown: cntUnknown, scanDate: now()]
             section("") {
-                paragraph "<div style='display:flex;gap:12px;margin-bottom:12px;'>" +
-                    "<span style='background:#0a3d0a;color:#2ecc71;padding:6px 12px;border-radius:8px;'>✅ Ideal: ${optimal}</span>" +
-                    "<span style='background:#3d3a0a;color:#f1c40f;padding:6px 12px;border-radius:8px;'>🟡 Melhorar: ${improvable}</span>" +
-                    "<span style='background:#3d0a0a;color:#e74c3c;padding:6px 12px;border-radius:8px;'>🔴 Sem sugestão: ${unknown}</span>" +
+                paragraph "<div style='display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;'>" +
+                    "<span style='background:#0a3d0a;color:#2ecc71;padding:6px 12px;border-radius:8px;'>✅ Ideal: ${cntIdeal}</span>" +
+                    "<span style='background:#0a2a3d;color:#3498db;padding:6px 12px;border-radius:8px;'>🔵 Compatível: ${cntCompatible}</span>" +
+                    "<span style='background:#3d3a0a;color:#f1c40f;padding:6px 12px;border-radius:8px;'>🟡 Sugestão: ${cntSuggestion}</span>" +
+                    "<span style='background:#3d0a0a;color:#e74c3c;padding:6px 12px;border-radius:8px;'>🔴 Não encontrado: ${cntUnknown}</span>" +
                     "</div>"
                 paragraph formatScanAllTable(results)
             }
@@ -206,12 +214,15 @@ def statsPage() {
         }
         if (state.lastScanStats) {
             def s = state.lastScanStats
-            def pctOpt = s.total > 0 ? Math.round((s.optimal / s.total) * 100) : 0
+            def pctOpt = s.total > 0 ? Math.round(((s.optimal ?: 0) / s.total) * 100) : 0
+            def compat = s.compatible ?: 0
+            def suggest = s.suggestion ?: s.improvable ?: 0
             section("<h3>🔍 Último Scan Completo</h3>") {
                 paragraph "<table style='width:100%;border-collapse:collapse;font-family:sans-serif;font-size:14px;'>" +
-                    "<tr style='background:#0a3d0a;'><td style='padding:8px;color:#2ecc71;border:1px solid #333;'><b>✅ Com driver ideal</b></td><td style='padding:8px;color:#eee;border:1px solid #333;'>${s.optimal} (${pctOpt}%)</td></tr>" +
-                    "<tr style='background:#3d3a0a;'><td style='padding:8px;color:#f1c40f;border:1px solid #333;'><b>🟡 Com sugestão</b></td><td style='padding:8px;color:#eee;border:1px solid #333;'>${s.improvable}</td></tr>" +
-                    "<tr style='background:#3d0a0a;'><td style='padding:8px;color:#e74c3c;border:1px solid #333;'><b>🔴 Sem recomendação</b></td><td style='padding:8px;color:#eee;border:1px solid #333;'>${s.unknown}</td></tr>" +
+                    "<tr style='background:#0a3d0a;'><td style='padding:8px;color:#2ecc71;border:1px solid #333;'><b>✅ Ideal</b></td><td style='padding:8px;color:#eee;border:1px solid #333;'>${s.optimal ?: 0} (${pctOpt}%)</td></tr>" +
+                    "<tr style='background:#0a2a3d;'><td style='padding:8px;color:#3498db;border:1px solid #333;'><b>🔵 Compatível</b></td><td style='padding:8px;color:#eee;border:1px solid #333;'>${compat}</td></tr>" +
+                    "<tr style='background:#3d3a0a;'><td style='padding:8px;color:#f1c40f;border:1px solid #333;'><b>🟡 Sugestão disponível</b></td><td style='padding:8px;color:#eee;border:1px solid #333;'>${suggest}</td></tr>" +
+                    "<tr style='background:#3d0a0a;'><td style='padding:8px;color:#e74c3c;border:1px solid #333;'><b>🔴 Não encontrado</b></td><td style='padding:8px;color:#eee;border:1px solid #333;'>${s.unknown ?: 0}</td></tr>" +
                     "<tr style='background:#16213e;'><td style='padding:8px;color:#3498db;border:1px solid #333;'><b>Total analisados</b></td><td style='padding:8px;color:#eee;border:1px solid #333;'>${s.total}</td></tr>" +
                     "</table>"
             }
@@ -677,10 +688,60 @@ def normalizeClusters(String rawClusters) {
 }
 
 def isDriverOptimal(String currentDriver, Map matchResult) {
-    if (matchResult.confidence == 0) return false
+    return getDriverStatus(currentDriver, matchResult) == "ideal"
+}
+
+/**
+ * Retorna o status de classificação do driver atual:
+ *  "ideal"      — driver atual é o recomendado #1
+ *  "compatible" — driver atual é uma das alternativas conhecidas
+ *  "suggestion" — existem sugestões mas o driver atual não é nenhuma delas
+ *  "unknown"    — nenhum match no banco
+ */
+def getDriverStatus(String currentDriver, Map matchResult) {
+    if (matchResult.confidence == 0) return "unknown"
     def suggested = matchResult.data?.suggested_driver ?: ""
-    if (!suggested) return false
-    return currentDriver?.toLowerCase()?.trim() == suggested?.toLowerCase()?.trim()
+    if (!suggested) return "unknown"
+
+    // Ideal: driver atual é o recomendado #1
+    if (isDriverNameMatch(currentDriver, suggested)) return "ideal"
+
+    // Compatível: driver atual aparece em alguma alternativa
+    def allDrivers = []
+    if (matchResult.matches) {
+        allDrivers.addAll(matchResult.matches.collect { it?.suggested_driver }.findAll { it })
+    }
+    if (matchResult.scoredMatches) {
+        allDrivers.addAll(matchResult.scoredMatches.collect { it?.data?.suggested_driver }.findAll { it })
+    }
+    if (allDrivers.any { isDriverNameMatch(currentDriver, it) }) return "compatible"
+
+    return "suggestion"
+}
+
+/**
+ * Matching flexível de nomes de driver.
+ * Ignora sufixos como (dev), (beta), v2 e faz contains bidirecional.
+ */
+def isDriverNameMatch(String a, String b) {
+    if (!a || !b) return false
+    def na = normalizeDriverName(a)
+    def nb = normalizeDriverName(b)
+    if (na == nb) return true
+    if (na.length() > 4 && nb.length() > 4) {
+        return na.contains(nb) || nb.contains(na)
+    }
+    return false
+}
+
+def normalizeDriverName(String name) {
+    if (!name) return ""
+    return name.toLowerCase().trim()
+        .replaceAll(/\s*\(dev\)\s*/, "")
+        .replaceAll(/\s*\(beta\)\s*/, "")
+        .replaceAll(/\s*v\d+(\.\d+)?\s*$/, "")
+        .replaceAll(/\s+/, " ")
+        .trim()
 }
 
 def getConfidenceStars(int confidence) {
@@ -801,9 +862,16 @@ def formatMatchResult(Map result, Map devData) {
 
 def formatAlternatives(List scoredMatches) {
     if (!scoredMatches || scoredMatches.size() == 0) return ""
-    def items = scoredMatches.take(3).collect { item ->
+    def items = scoredMatches.take(4).collect { item ->
         def m = item.data
-        "<li style='color:#bbb;font-size:13px;'><b>${htmlEscape(m.suggested_driver)}</b> (${htmlEscape(m.author)}) - score ${item.score}</li>"
+        def altHpmBadge = m.hpm_available ?
+            "<span style='background:#27ae60;color:#fff;padding:1px 6px;border-radius:4px;font-size:11px;'>HPM</span>" :
+            "<span style='background:#2980b9;color:#fff;padding:1px 6px;border-radius:4px;font-size:11px;'>Built-in</span>"
+        def altLink = (m.url && m.url.toString().trim()) ?
+            " <a href='${htmlEscape(m.url)}' target='_blank' style='color:#3498db;font-size:12px;text-decoration:none;'>🔗</a>" : ""
+        "<li style='color:#bbb;font-size:13px;margin:6px 0;'>" +
+            "<b>${htmlEscape(m.suggested_driver)}</b> (${htmlEscape(m.author)}) ${altHpmBadge}${altLink}" +
+            "<br/><span style='color:#666;font-size:11px;'>Score: ${item.score}</span></li>"
     }.join("")
     return "<div style='margin-top:10px;border-top:1px solid #1f7a3a;padding-top:8px;'>" +
         "<p style='color:#aaa;font-size:13px;margin:0 0 4px 0;'><b>Alternativas se o recomendado nao funcionar:</b></p>" +
@@ -815,12 +883,28 @@ def formatScanAllTable(List results) {
     results.each { r ->
         def d = r.devData
         def m = r.match
-        def opt = r.optimal
+        def status = r.status ?: "unknown"
         def suggested = htmlEscape(m.data?.suggested_driver ?: (m.rules?.size() > 0 ? m.rules[0].suggested_driver ?: "Ver clusters" : "—"))
         def protocol = (d.protocol ?: "zigbee") == "zwave" ? "Z-Wave" : "Zigbee"
-        def bgColor = m.confidence == 0 ? "#3d0a0a" : (opt ? "#0a3d0a" : "#3d3a0a")
-        def statusIcon = m.confidence == 0 ? "🔴" : (opt ? "✅" : "🟡")
+
+        // Cores e ícones baseados no status de 4 estados
+        def bgColor = "#1a1a2e"
+        def statusIcon = "—"
+        switch(status) {
+            case "ideal":      bgColor = "#0a3d0a"; statusIcon = "✅"; break
+            case "compatible": bgColor = "#0a2a3d"; statusIcon = "🔵"; break
+            case "suggestion": bgColor = "#3d3a0a"; statusIcon = "🟡"; break
+            case "unknown":    bgColor = "#3d0a0a"; statusIcon = "🔴"; break
+        }
+
         def stars = getConfidenceStars(m.confidence)
+
+        // Contagem de alternativas
+        def altCount = (m.scoredMatches?.size() ?: 0) + (m.matches?.size() ?: 0)
+        if (m.scoredMatches) altCount = m.scoredMatches.size()
+        else if (m.matches) altCount = m.matches.size()
+        def altLabel = altCount > 0 ? " <span style='color:#aaa;font-size:11px;'>+${altCount} outros</span>" : ""
+
         def hpmCell = ""
         def linkCell = ""
         if (m.confidence > 0 && m.data) {
@@ -839,7 +923,7 @@ def formatScanAllTable(List results) {
             "<td style='padding:6px 8px;border:1px solid #333;color:#bbb;'>${htmlEscape(d.manufacturer)}</td>" +
             "<td style='padding:6px 8px;border:1px solid #333;color:#bbb;'>${htmlEscape(d.model)}</td>" +
             "<td style='padding:6px 8px;border:1px solid #333;color:#888;'>${htmlEscape(d.currentDriver)}</td>" +
-            "<td style='padding:6px 8px;border:1px solid #333;color:#eee;'><b>${suggested}</b></td>" +
+            "<td style='padding:6px 8px;border:1px solid #333;color:#eee;'><b>${suggested}</b>${altLabel}</td>" +
             "<td style='padding:6px 8px;border:1px solid #333;text-align:center;'>${hpmCell}</td>" +
             "<td style='padding:6px 8px;border:1px solid #333;text-align:center;'>${linkCell}</td>" +
             "<td style='padding:6px 8px;border:1px solid #333;text-align:center;'>${stars}</td>" +
