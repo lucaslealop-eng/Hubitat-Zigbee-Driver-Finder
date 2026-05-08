@@ -1,6 +1,8 @@
-# Hubitat Driver Finder 2.3.0
+# Hubitat Driver Finder 2.5.0
 
 Identifique dispositivos Zigbee e Z-Wave pareados no Hubitat e veja qual driver usar sem pesquisar manualmente em foruns.
+
+> 📖 **[Documentacao detalhada e apresentacao do app](docs/ABOUT.md)**
 
 ## O que e?
 
@@ -55,6 +57,14 @@ Para usuarios leigos: pense nesse timer como uma validade da lista. Durante 24 h
 
 Importante: esta versao nao tem modo offline. Se o hub nao conseguir acessar o banco remoto e nao houver cache valido carregado na memoria, o app mostra uma mensagem de erro pedindo para verificar a conexao.
 
+## Melhorias da versao 2.5
+
+- Sistema de classificacao com 4 estados: Ideal, Compativel, Sugestao e Nao encontrado.
+- Matching flexivel de nomes de driver (ignora sufixos como `(dev)`, `(beta)`, `v2`).
+- Alternativas completas com badge HPM/Built-in e link do autor.
+- Indicador `+N outros` na tabela de scan completo.
+- Pagina de estatisticas com 4 categorias.
+
 ## Melhorias da versao 2.3
 
 - Motor de score para afunilar fingerprints duplicadas e conflitantes.
@@ -76,7 +86,7 @@ Importante: esta versao nao tem modo offline. Se o hub nao conseguir acessar o b
 
 1. No Hubitat, acesse Apps Code.
 2. Clique em New App.
-3. Cole o conteudo de `src/ZigbeeDriverFinder.groovy`.
+3. Cole o conteudo de `src/HubitatDriverFinder.groovy`.
 4. Clique em Save.
 5. Acesse Apps, depois Add User App.
 6. Selecione Hubitat Driver Finder.
@@ -84,9 +94,9 @@ Importante: esta versao nao tem modo offline. Se o hub nao conseguir acessar o b
 ## Estrutura do projeto
 
 ```text
-Zigbee_Driver_Finder/
+Hubitat_Driver_Finder/
 ├── src/
-│   └── ZigbeeDriverFinder.groovy
+│   └── HubitatDriverFinder.groovy
 ├── data/
 │   ├── zigbee_driver_db.json
 │   ├── db_overrides.json
@@ -101,6 +111,8 @@ Zigbee_Driver_Finder/
 │   ├── db_other_brands.json
 │   ├── db_misc_zigbee.json
 │   └── db_hpm_scraped.json
+├── docs/
+│   └── ABOUT.md
 ├── scripts/
 │   ├── hpm_scraper.js
 │   ├── import_company_sheet.js
