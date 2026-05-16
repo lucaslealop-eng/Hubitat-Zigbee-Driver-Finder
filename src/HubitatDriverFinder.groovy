@@ -1,6 +1,6 @@
 /**
  * ========================================================
- *  Hubitat Driver Finder v2.5.0
+ *  Hubitat Driver Finder v2.5.1
  * ========================================================
  *  Copyright (c) 2026 Lucas (Hubitat Agent Project)
  *  All rights reserved.
@@ -16,7 +16,7 @@
  *  e clusters reportados.
  *
  *  Autor: Lucas (Hubitat Agent Project)
- *  Versão: 2.5.0
+ *  Versão: 2.5.1
  *  Data: 2026-05-08
  *
  *  Funcionalidades:
@@ -60,7 +60,8 @@ preferences {
 @Field static String DB_BASE_URL = "https://raw.githubusercontent.com/lucaslealop-eng/Hubitat-Driver-Finder-Data/main/"
 @Field static List DB_FILES = ["db_overrides.json", "db_company_devices.json", "db_zwave_devices.json", "db_zwave_hpm_scraped.json", "db_tuya.json", "db_xiaomi_aqara.json", "db_brands.json", "db_other_brands.json", "db_misc_zigbee.json", "db_hpm_scraped.json", "db_zigbee2mqtt_devices.json", "db_zwavejs_devices.json"]
 @Field static String DB_INDEX_URL = "https://raw.githubusercontent.com/lucaslealop-eng/Hubitat-Driver-Finder-Data/main/zigbee_driver_db.json"
-@Field static String APP_VERSION = "2.5.0"
+@Field static Map DB_REQUEST_HEADERS = ["User-Agent": "Hubitat-Driver-Finder/2.5.1"]
+@Field static String APP_VERSION = "2.5.1"
 
 // ─── Cache Estático (JVM memory, não state) ────────────
 @Field static Map cachedDb = null
@@ -390,13 +391,19 @@ def getCachedDatabase() {
 def fetchRemoteDatabase() {
     try {
         def indexDb = [fallback_rules: [], devices: []]
-        httpGet([uri: DB_INDEX_URL, contentType: "application/json", timeout: 15]) { resp ->
-            if (resp.status == 200) { indexDb = resp.data }
+        httpGet([uri: DB_INDEX_URL, contentType: "application/json", timeout: 30, headers: DB_REQUEST_HEADERS]) { resp ->
+            if (resp.status == 200) {
+                indexDb = resp.data
+            } else {
+                log.warn "Indice do banco retornou HTTP ${resp.status}: ${DB_INDEX_URL}"
+            }
         }
         def allDevices = []
+        def loadedFiles = []
+        def failedFiles = []
         DB_FILES.each { fileName ->
             try {
-                httpGet([uri: DB_BASE_URL + fileName, contentType: "application/json", timeout: 10]) { resp ->
+                httpGet([uri: DB_BASE_URL + fileName, contentType: "application/json", timeout: 30, headers: DB_REQUEST_HEADERS]) { resp ->
                     if (resp.status == 200 && resp.data?.devices) {
                         resp.data.devices.each { device ->
                             def enriched = [:] + device
@@ -404,12 +411,25 @@ def fetchRemoteDatabase() {
                             enriched._sourcePriority = getSourcePriority(fileName)
                             allDevices << enriched
                         }
+                        loadedFiles << "${fileName} (${resp.data.devices.size()})"
+                    } else {
+                        failedFiles << "${fileName} (HTTP ${resp.status})"
                     }
                 }
-            } catch (e) { log.warn "Falha ao carregar ${fileName}: ${e.message}" }
+            } catch (e) {
+                failedFiles << "${fileName} (${e.message})"
+                log.warn "Falha ao carregar ${fileName}: ${e.message}"
+            }
+        }
+        if (failedFiles) {
+            log.warn "Arquivos do banco com falha: ${failedFiles.join(', ')}"
+        }
+        if (allDevices.size() == 0) {
+            log.error "Banco remoto nao carregou nenhum dispositivo. Verifique acesso do hub a ${DB_BASE_URL}"
+            return null
         }
         def db = [devices: allDevices, fallback_rules: indexDb.fallback_rules ?: []]
-        log.info "📦 Banco carregado: ${allDevices.size()} dispositivos, ${db.fallback_rules.size()} regras"
+        log.info "📦 Banco carregado: ${allDevices.size()} dispositivos, ${db.fallback_rules.size()} regras em ${loadedFiles.size()} arquivos"
         return db
     } catch (e) {
         log.error "Falha ao baixar banco de dados: ${e.message}"
@@ -783,8 +803,6 @@ def formatDeviceInfo(Map d) {
         "<tr style='background:#16213e;color:#eee;'><td style='padding:8px;border:1px solid #333;'><b>Manufacturer</b></td><td style='padding:8px;border:1px solid #333;'>${htmlEscape(d.manufacturer)}</td></tr>" +
         "<tr style='background:#1a1a2e;color:#eee;'><td style='padding:8px;border:1px solid #333;'><b>Model</b></td><td style='padding:8px;border:1px solid #333;'>${htmlEscape(d.model)}</td></tr>" +
         zwaveRows +
-        "<tr style='background:#16213e;color:#eee;'><td style='padding:8px;border:1px solid #333;'><b>In Clusters</b></td><td style='padding:8px;border:1px solid #333;'>${htmlEscape(d.inClusters)}</td></tr>" +
-        "<tr style='background:#1a1a2e;color:#eee;'><td style='padding:8px;border:1px solid #333;'><b>Out Clusters</b></td><td style='padding:8px;border:1px solid #333;'>${htmlEscape(d.outClusters)}</td></tr>" +
         "<tr style='background:#16213e;color:#e94560;'><td style='padding:8px;border:1px solid #333;'><b>Driver Atual</b></td><td style='padding:8px;border:1px solid #333;'>${htmlEscape(d.currentDriver)}</td></tr>" +
         "</table>"
 }
